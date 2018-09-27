@@ -1,0 +1,246 @@
+```{r get-data-exp1, cache = T, message=F, echo = F}
+url <- "https://github.com/PerceptionCognitionLab/data1/tree/master/repGardinerJava/RKN_replication/RKN_exp1"
+
+##Quick fix for some participant IDs giving out to several people
+github_page <- read_html(url)
+file_nodes <- html_nodes(github_page, ".content .css-truncate-target .js-navigation-open")
+file_names <- html_text(file_nodes)
+I <- length(file_names)
+
+dat <- batch_read_github(url
+                         , extension = "_RKN"
+                         , read_fun = read.csv
+                         )
+
+exclusion <- c(0, 1, 999, 998, 551998138)
+dat <- subset(dat, !(ID %in% exclusion))
+I <- I - length(exclusion)
+K <- table(dat$ID, dat$test_type)[1]
+L <- table(dat$ID, dat$test_type, dat$item_type)[1]
+dat$sub <- rep(1:I, each = 2 * K)
+ids <- unique(dat$sub)
+dat <- droplevels(dat)
+```
+
+```{r data-cleaning-exp1, fig.height=4, fig.width=5, echo = F}
+dat$accuracy <- dat$test_type == dat$ON_resp
+sub.acc <- tapply(dat$accuracy, dat$sub, mean)
+# hist(sub.acc, xlab = "Accuracy", main = "")
+# abline(v = mean(sub.acc), lwd = 2, col = "darkred")
+
+performance.crit <- sub.acc > .5
+I.clean <- sum(performance.crit) #Number of participants that have above-chance performance.
+
+include <- ids[performance.crit]
+dat.clean <- subset(dat, sub %in% include)
+
+props_subj <- plyr::ddply(dat.clean
+                    , c("sub", "item_type", "test_type", "RK_resp")
+                    , summarise
+                    , prop = length(sub)/L
+                    , .drop=FALSE)
+# res <- table(dat.clean$RK_resp, dat.clean$test_type, dat.clean$item_type)/(I.clean*L)
+res <- tapply(props_subj$prop
+              , list(props_subj$RK_resp, props_subj$item_type, props_subj$test_type)
+              , mean)
+```
+
+```{r descriptive-plot-exp1, fig.width=6, fig.height=4, fig.cap="Rebuilt figure from Gardiner and Java with data from our Experiment 1.", eval = F}
+layout(matrix(1:2, ncol = 2), widths = c(.54, .46))
+par(mar = c(5.1, 4.1, 4.1, 2.1))
+rk <- rep(1:2, 2)
+barcols <- c("royalblue", "indianred")
+
+barplot(as.vector(res[1:2,,1])
+        , space = c(0.1,0.1, .6, 0.1)
+        , col = barcols[rk]
+        , ylim = c(0, .4)
+        , ylab = "Response Probability"
+        )
+mtext(c("Lure", "Target"), side = 1, line = 1, at = c(1.1, 3.8))
+mtext(c("Nonwords"), side = 1, line = 2, at = 2.5)
+legend("topleft", legend = c("Remember", "Know"), fill = barcols, bty = "n", cex = .8)
+
+
+par(mar = c(5.1, 1, 4.1, 2.1))
+
+barplot(as.vector(res[1:2,,2])
+        , space = c(0.1,0.1, .6, 0.1)
+        , col = barcols[rk]
+        , ylim = c(0, .4)
+        , yaxt = "n"
+        )
+mtext(c("Lure", "Target"), side = 1, line = 1, at = c(1.1, 3.8))
+mtext(c("Words"), side = 1, line = 2, at = 2.5)
+```
+
+```{r tabExp1, results="asis"}
+tabres <- tapply(props_subj$prop
+              , list(props_subj$item_type, props_subj$RK_resp, props_subj$test_type)
+              , mean)
+
+tabres <- rbind(tabres[,,2], tabres[,,1])
+tabres <- tabres[c(2, 1, 4, 3), ]
+# Item <- rownames(tabres)
+# Test <- rep(c("old", "new"), each = 2)
+colnames(tabres) <- c("Remember", "Know", "New")
+rownames(tabres) <- c("Old Word","Old Nonword","New Word", "New Nonword")
+
+# apa_table(round(tabres, 3)
+#           , col_spanners = list('Response' = c(2, 4))
+#           , caption = "Response proportions in Experiment 1"
+#           )
+```
+
+
+```{r dat-reformat}
+freq_subj <- plyr::ddply(dat.clean
+                    , c("sub", "item_type", "test_type", "RK_resp")
+                    , summarise, freq = length(sub), .drop=FALSE)
+
+psw <- dcast(freq_subj, sub + item_type + test_type ~ RK_resp, fill = 0)
+
+make_y <- function(dat){ 
+  #vector of 3 values
+  #, first = number of remember responses
+  #, second = number of know responses
+  #, third = number of new responses
+  if(!is.vector(dat)){return("data not in the right format")}
+  if(length(dat) !=3){
+    return("please submit vector with #remember
+           , #know and #new responses and column labels R, K and N")}
+  
+  (dat['R'] - dat['K'])/sum(dat[c('R', 'K', 'N')])
+}
+
+y <- apply(psw[,c('R', 'K', 'N')], 1, make_y)
+
+#Recode item-type and test_type into one factor
+cond <- with(psw, interaction(item_type, test_type))
+#I need level order: ow, onw, nw, nnw
+cond <- factor(cond, rev(levels(cond)))
+
+#Recode ID into factor
+sub <- as.factor(psw$sub)
+
+dat.all.1 <- cbind(psw, y)
+```
+
+```{r design-mat, echo = F}
+###Design matrices
+
+#Mu
+X_u <- matrix(0, nrow = length(y), ncol = 4)
+for(i in 1:length(y)){
+  X_u[i, as.numeric(cond[i])] <- 1
+}
+
+#M0
+X_star <- X_u[, 1:3]
+X_star[,3] <- X_u[,3] + X_u[,4]
+
+#M_A1
+X_A1 <- X_star[, 2:3]
+X_A1[,1] <- X_star[,1] + X_star[,2]
+
+#No design matrices for the other two models are needed
+#, since they have the same design matrix as M_u
+```
+
+```{r estimation, echo = F}
+###Estimation & Bayes factors for raw models using bayesfactor package
+r <- sqrt(2)/(2)
+
+#Mu
+gMap <- rep(0, 4)
+samples_u <- nWayAOV(y, X_u, gMap, rscale = r
+                     , posterior = T, iterations = 100000)
+out_u <- nWayAOV(y, X_u, gMap, rscale = r)
+
+#M0
+gMap <- rep(0, 3)
+samples_star <- nWayAOV(y, X_star, gMap, rscale = r
+                        , posterior = T, iterations = 100000)
+out_star <- nWayAOV(y, X_star, gMap, rscale = r)
+
+#MA1
+gMap <- rep(0, 2)
+# samples_A1 <- nWayAOV(y, X_A1, gMap, rscale = 1, posterior = T)
+out_A1 <- nWayAOV(y, X_A1, gMap, rscale = r)
+```
+
+```{r bayes-factor, echo = F}
+###Bayes factor computation using encompassing approach Haaf&Rouder
+
+#M0
+est.star <- samples_star[,1] + samples_star[, 2:4]
+# colMeans(est.star)
+
+##Posterior prob of mu1> mu2
+# star <- est.star[,1] > 0 & est.star[,2] < 0
+star <- est.star[,1] > est.star[,2]
+post.prob.star <- mean(star)
+
+##Prior prob of mu1 > mu2
+R <- 1000000
+mu.theta.sd <- .5
+mu1 <- rnorm(R, 0, mu.theta.sd)
+mu2 <- rnorm(R, 0, mu.theta.sd)
+# priorstar <- mu1 > 0 & mu2 < 0
+priorstar <- mu1 > mu2
+prior.prob.star <- mean(priorstar)
+
+#MA2
+est.u <- samples_u[,1] + samples_u[, 2:5]
+# colMeans(est.u)
+
+##Posterior
+a2 <- est.u[,1] > est.u[,2] & est.u[,3] > est.u[,4]
+post.prob.a2 <- mean(a2)
+
+##Prior prob
+mu1 <- rnorm(R, 0, mu.theta.sd)
+mu2 <- rnorm(R, 0, mu.theta.sd)
+mu3 <- rnorm(R, 0, mu.theta.sd)
+mu4 <- rnorm(R, 0, mu.theta.sd)
+priora2 <- mu1 > mu2 & mu3 > mu4
+prior.prob.a2 <- mean(priora2)
+
+#MA3
+##Posterior
+a3 <- est.u[,1] < est.u[,2] & est.u[,3] < est.u[,4]
+post.prob.a3 <- mean(a3)
+
+##Prior prob
+priora3 <- mu1 < mu2 & mu3 < mu4
+prior.prob.a3 <- mean(priora3)
+
+#MA4
+##Posterior
+a4 <- est.u[,1] > est.u[,2] & est.u[,3] < est.u[,4]
+post.prob.a4 <- mean(a4)
+
+##Prior prob
+priora4 <- mu1 > mu2 & mu3 < mu4
+prior.prob.a4 <- mean(priora4)
+
+#bfs everything compared to M0
+bf.starbase <- log(post.prob.star / prior.prob.star) + out_star$bf
+bf.a2base <- log(post.prob.a2 / prior.prob.a2) + out_u$bf
+bf.a3base <- log(post.prob.a3 / prior.prob.a3) + out_u$bf
+bf.a4base <- log(post.prob.a4 / prior.prob.a4) + out_u$bf
+bf.staru <- exp(bf.starbase - out_u$bf)
+bf.stara1 <- exp(bf.starbase - out_A1$bf)
+bf.stara2 <- exp(bf.starbase - bf.a2base)
+bf.stara3 <- exp(bf.starbase - bf.a3base)
+bf.stara4 <- exp(bf.starbase - bf.a4base)
+
+bfs.exp1 <- c('staru' = bf.staru, 'star1' = bf.stara1, 'star2' = bf.stara2, 'star3' = bf.stara3, 'star4' = bf.stara4)
+```
+
+```{r eval = F}
+
+```
+
+
+
