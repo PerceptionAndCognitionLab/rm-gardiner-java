@@ -1,0 +1,81 @@
+\begin{table*}[tbp]
+\begin{center}
+\begin{threeparttable}
+\caption{\label{tab:tab1}Response proportions from Gardiner (1988, Exp. 1)}
+\begin{tabular}{lccclccclccclccc}
+\toprule
+ & \multicolumn{3}{c}{Response} \\
+\cmidrule(r){2-4}
+ & \multicolumn{1}{c}{Remember} & \multicolumn{1}{c}{Know} & \multicolumn{1}{c}{New}\\
+\midrule
+Condition &  &  & \\
+\ \ \ Deep & 0.65 & 0.17 & 0.18\\
+\ \ \ Shallow & 0.35 & 0.17 & 0.48\\
+\ \ \ Lure & 0.05 & 0.07 & 0.88\\
+\bottomrule
+\end{tabular}
+\end{threeparttable}
+\end{center}
+\end{table*}
+\efloatseparator
+ 
+\begin{table*}[b]
+\begin{center}
+\begin{threeparttable}
+\caption{\label{tab:tab2}Response proportions from Gardiner and Java (1990, Exp. 2)}
+\begin{tabular}{lcccrlcccrlcccrlcccrlcccr}
+\toprule
+ & \multicolumn{3}{c}{Response}  &\\
+\cmidrule(r){2-4}
+ & \multicolumn{1}{c}{Remember} & \multicolumn{1}{c}{Know} & \multicolumn{1}{c}{New} & \multicolumn{1}{c}{Scaled Difference}\\
+\midrule
+Condition &  &  &  & \\
+\ \ \ Old Word & 0.28 (0.26) & 0.16 (0.2) & 0.56 (0.55) & 0.12\\
+\ \ \ Old Nonword & 0.19 (0.19) & 0.3 (0.3) & 0.51 (0.51) & -0.11\\
+\ \ \ New Word & 0.04 (0.05) & 0.11 (0.09) & 0.85 (0.86) & -0.07\\
+\ \ \ New Nonword & 0.03 (0.03) & 0.12 (0.12) & 0.85 (0.85) & -0.09\\
+\bottomrule
+\addlinespace
+\end{tabular}
+\begin{tablenotes}[para]
+\normalsize{\textit{Note.} Predictions from a single-process model are provided in parentheses.}
+\end{tablenotes}
+\end{threeparttable}
+\end{center}
+\end{table*}
+\efloatseparator
+ 
+\begin{table*}[tbp]
+\begin{center}
+\begin{threeparttable}
+\caption{\label{tab:tab-results}Response proportions for replication studies.}
+\begin{tabular}{lcccrlcccrlcccrlcccrlcccr}
+\toprule
+ & \multicolumn{3}{c}{Response}  &\\
+\cmidrule(r){2-4}
+  & \multicolumn{1}{c}{Remember/Sure} & \multicolumn{1}{c}{Know/Unsure} & \multicolumn{1}{c}{New} & \multicolumn{1}{c}{Scaled Difference}\\
+\midrule
+Experiment 1 &  &  &  & \\
+\ \ \ Old Words & 0.35 & 0.30 & 0.35 & 0.05\\
+\ \ \ Old Nonwords & 0.36 & 0.28 & 0.37 & 0.08\\
+\ \ \ New Words & 0.20 & 0.18 & 0.61 & 0.02\\
+\ \ \ New Nonwords & 0.20 & 0.15 & 0.64 & 0.05\\
+Experiment 2 &  &  &  & \\
+\ \ \ Old Words & 0.35 & 0.31 & 0.35 & 0.04\\
+\ \ \ Old Nonwords & 0.32 & 0.32 & 0.36 & 0.00\\
+\ \ \ New Words & 0.08 & 0.23 & 0.69 & -0.16\\
+\ \ \ New Nonwords & 0.07 & 0.15 & 0.78 & -0.09\\
+Experiment 3 &  &  &  & \\
+\ \ \ Old Words & 0.46 & 0.19 & 0.35 & 0.28\\
+\ \ \ Old Nonwords & 0.45 & 0.19 & 0.35 & 0.26\\
+\ \ \ New Words & 0.18 & 0.16 & 0.66 & 0.01\\
+\ \ \ New Nonwords & 0.13 & 0.17 & 0.70 & -0.04\\
+\bottomrule
+\addlinespace
+\end{tabular}
+\begin{tablenotes}[para]
+\normalsize{\textit{Note.} Response proportions are for Remember/Know/New responses for Experiments 1 and 2, and for Sure/Unsure/New responses for Experiment 3. The last column provides the scaled difference values per condition as specified in Equation 1.}
+\end{tablenotes}
+\end{threeparttable}
+\end{center}
+\end{table*}

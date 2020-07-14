@@ -1,0 +1,50 @@
+
+# Rajaram 1993 appendix
+
+"Please read the following instructions carefully. You will be presented with a booklet containing words. Work carefully down the column and indicate on the first blank next to each word whether you recognize each word from the study list. If you do recognize the word, write "Y" (for "yes"), and if you do not recognize it, then write "N" (for "no"). In addition, at the time you recognize the word, you should also write on the second blank next to the word, whether or not you remember the word from the list or you just know on some other basis that the word was on the study list. Please read the following instructions to find out how to make the "remember" (or "R") and "know" (or "K") judgments.
+
+Remember judgments: If your recognition of the word is accompanied by a conscious recollection of its prior occurrence in the study list, then write "R." "Remember" is the ability to become consciously aware again of some aspect or aspects of what happened or what was experienced at the time the word was presented (e.g., aspects of the physical appearance of the word, or of something that happened in the room, or of what you were thinking and doing at the time). In other words, the "remembered" word should bring back to mind a particular association, image, or something more personal from the time of study, or something about its appearance or position (i.e., what came before or after that word).
+
+Know judgments: "Know" responses should be made when you recognize that the word was in the study list but you cannot consciously recollect anything about its actual occurrence or what happened or what was experienced at the time of its occurrence. In other words, write "K" (for "know") when you are certain of recognizing the words but these words fail to evoke any specific conscious recollection from the study list.
+
+To further clarify the difference between these two judgments (i.e., "R" vs. "K"), here are a few examples. If someone asks for your name, you would typically respond in the "know" sense without becoming consciously aware of anything about a particular event or experience; however, when asked the last movie you saw, you would typically respond in the "remember" sense, that is, becoming consciously aware again of some aspects of the experience. If you have any questions regarding these judgments, please ask the experimenter. Thank you."
+
+***Extra detail from text***
+
+After reading these instructions, each subject was asked to explain to the experimenter how she/he would make the "remember" and "know" judgments on the basis of the instructions provided. If they were confused about the distinction, the experimenter clarified the instructions further before the test phase began.
+
+
+
+# Geraci et al 2009 appendix
+
+## Experiment 1
+
+This is a memory test. On the sheet you will see a list of items. Please indicate, yes or no, whether you recognize each item as having been presented earlier during the study session. If you recognize the item from the study list, you should circle it. If you do not recognize the item you should simply leave it alone and move on to the next item. You will not be prompted to make your recognition judgments. Rather, upon seeing the item, you should simply decide whether or not you studied that item earlier. If you recognize the word, then please judge whether you Remember the item from the list or you know it was there. The following descriptions will help you make the distinction between these two post-memory judgments.
+
+You should make a remember judgment if you can consciously recollect its prior occurrence. Remember is the ability to become consciously aware again of some aspect or aspects of what happened or what was experienced at the time the word was presented (e.g., aspects of the physical appearance of the item, or of something that happened in the room, or of what you were thinking or doing at the time). In other words, the ‘‘remembered” word should bring back to mind a particular association, image, or something more personal from the time of study, or something about its appearance or position (i.e., what came before or after that word).
+
+You should make a know judgment if you recognize the item from the study list, but you cannot consciously recollect anything about its actual occurrence or what happened or what was experienced at the time of its occurrence. In other words, write ‘‘know” when you are certain that you recognize the item, but it fails to evoke any specific conscious recollection from the study list.
+
+To further clarify the difference between these two judgments (remembering and knowing) here are a few examples. If someone asks for you name, you would typically respond in the ‘‘know” sense, without becoming consciously aware of anything about a particular event or experience. However, when asked the last movie you saw, you would typically respond in the ‘‘remember” sense, that is, becoming consciously aware again of some aspects of the experience of seeing the movie.
+
+Now, I will ask you to describe instances from your own life that you would classify as Remember responses and Know responses to make sure that the distinction between these two states is clear. (At this point stop and ask subjects for examples using both categories.)
+
+To reiterate, you will see a list of items and you will judge ‘‘yes” or ‘‘no” whether you recognize the words as having been presented earlier. If you indicate that you do recognize the word, by circling it, then you will try to indicate how you recognize the particular word, by writing remember or know on the blank. Importantly, if you indicate that you do not recognize the word, then you will simply move on to the next item since it will not be relevant (you can’t remember a word that you said you did not study!). Please think carefully about each item and try not to guess.
+On the count of three, you may begin. One, two, three,. . ..
+
+
+## Experiment 2 (these apparently produce data that looks like sure/unsure...)
+
+This is a memory test. I will give you a sheet of paper with several words on it. Circle the words that you recognize as having been presented earlier during the study session. If you do not recognize the item you should simply leave it alone and move on to the next item. If you recognize and circle the word, then please judge whether you remember the item from the list or you know it was there. The following descriptions will help you make the distinction between these two post- memory judgments.
+
+You should make a remember judgment if you can remember some qualitative information about the study event. This could include such things as recollecting what you were thinking about when the word was presented, what the word looked like, or what it sounded like. Moreover, you should write ‘‘remember” on the blank only if you can, if asked, tell the experimenter what you recollected about the study event.
+
+You should respond know, by writing ‘‘know” on the blank, if you think the item was studied but you cannot recollect any details about the study event.
+
+To reiterate, you will see a series of items and you will circle words that you recognize as having been presented earlier. If you indicate that you do recognize the word, by circling it, then you will also try to indicate how you recognize the particular word, by writing remember or know on the blank. For those items you do no recognize you should not circle the item or fill in the blank. Simply leave the item unmarked. Think carefully about each item and try not to guess. Also, please work on one item at a time, and make both the recognition and Remember or Know judgment together.
+On the count of three you may begin. One, two, three,. . ..
+
+
+***Extra detail***
+
+After the retention interval, participants were read the remember–know instructions for the upcoming recognition test, which took approximately 5 min. The remember–know instructions were taken verbatim from Rajaram (1993). If participants were confused about the definitions of remembering or knowing, the experimenter clarified by simply rereading part of the instructions. To attempt to stay as close to the written instructions as possible, the experimenter did not elaborate on the definitions beyond what was provided in the written instructions.

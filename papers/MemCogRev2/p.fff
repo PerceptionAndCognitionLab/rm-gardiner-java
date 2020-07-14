@@ -1,0 +1,21 @@
+\begin{figure*}[hbt]
+\ifnextchar[{\eatarg}{}
+
+\centering
+\includegraphics{p_files/figure-latex/results-1-1.pdf}
+\caption{\label{fig:results-1}Results from Experiment 1. The dark lines shows average response rates for all participants; dashed lines show average response rates from Gardiner and Java's (1990) Experiment 2. Critically, there is no interaction between item type (i.e.~word vs.~nonword) and preferred response category (i.e.~Remember vs.~Know) for the replication data. The right two panels show the modeled scaled difference scores for nonwords relative to words. According to dual-process theory, the scaled difference scores should be above the diagonal for old items as indicated by the shaded area, and on or close to the diagonal for new items.}
+\end{figure*}
+\begin{figure*}[hbt]
+\ifnextchar[{\eatarg}{}
+
+\centering
+\includegraphics{p_files/figure-latex/results-2-1.pdf}
+\caption{\label{fig:results-2}Results from Experiment 2. The dark lines shows average response rates for all participants; dashed lines show average response rates from Gardiner and Java's (1990) Experiment 2. Critically, there is no interaction between item type (i.e.~word vs.~nonword) and preferred response category (i.e.~Remember vs.~Know) for the replication data. The right two panels show the modeled scaled difference scores for nonwords relative to words. According to dual-process theory, the scaled difference scores should be above the diagonal for old items as indicated by the shaded area, and on or close to the diagonal for new items.}
+\end{figure*}
+\begin{figure*}[hbt]
+\ifnextchar[{\eatarg}{}
+
+\centering
+\includegraphics{p_files/figure-latex/results-3-1.pdf}
+\caption{\label{fig:results-3}Results from Experiment 3. The dark lines shows average response rates for all participants; dashed lines show average response rates from Gardiner and Java's (1990) Experiment 3. The replication and original results are very similar. According to Gardiner and Java, the scaled differences shown in panels E and F should be on or close to the diagonal lines as no effect of lexicality is expected.}
+\end{figure*}

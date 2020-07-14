@@ -1,0 +1,14 @@
+base
+plyr
+papaja
+knitr
+coda
+Matrix
+BayesFactor
+reshape2
+xml2
+rvest
+bitops
+RCurl
+rmdfiltr
+stringr

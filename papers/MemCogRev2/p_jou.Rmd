@@ -1,0 +1,1149 @@
+---
+title             : "Revisiting the Remember-Know Task: Replications of Gardiner and Java (1990)"
+shorttitle        : "Revisiting the Remember-Know Task"
+author: 
+  - name          : "Julia M. Haaf"
+    affiliation   : "1"
+    corresponding : yes    # Define only one corresponding author
+    address       : "Postbus 15906, 1001 NK  Amsterdam, The Netherlands"
+    email         : "j.m.haaf@uva.nl"
+  - name          : "Stephen Rhodes"
+    affiliation   : "2"
+  - name          : "Tony Sun"
+    affiliation   : "3"
+  - name          : "Hope K. Snyder"
+    affiliation   : "3"
+  - name          : "Moshe Naveh-Benjamin"
+    affiliation   : "3"
+  - name          : "Jeffrey N. Rouder"
+    affiliation   : "4"
+affiliation:
+  - id            : "1"
+    institution   : "University of Amsterdam"
+  - id            : "2"
+    institution   : "Rotman Research Institute, Baycrest"
+  - id            : "3"
+    institution   : "University of Missouri"
+  - id            : "4"
+    institution   : "University of California, Irvine"
+author_note: |
+  JH, SR, MNB, and JR planned the study; JH, SR, TS, HK and JR designed the experiments; JH and SR analyzed the data; all authors contributed to the manuscript. We thank Ashley M. Meierhofer and Carson Burke for assistance with data collection.
+abstract: |
+  Perhaps the most evidential behavioral result for two memory processes comes from Gardiner and Java (1990).  Participants provided more remember than know responses for old words but more know than remember responses for old nonwords.  Moreover, there was no effect of word/nonword status for new items.  The combination of a crossover interaction for old items with an invariance for new items provides strong evidence for two distinct processes while ruling out criteria or bias explanations.  Here, we report a modern replication of this remarkable study.  In two experiments with larger numbers of items and participants, we were unable to replicate the stunning crossover. Instead, our data are more consistent with a single-process account.  In a third experiment, we were able to replicate Gardiner and Java's baseline results with a sure-unsure paradigm supporting a single-process explanation. It seems that Gardiner and Java's remarkable crossover result is not replicable.
+note: Version 3, 05/2019
+  
+keywords          : "Recognition Memory, Implicit Memory, Replication"
+bibliography      : ["r-references.bib", "lab.bib"]
+floatsintext      : no
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+lineno            : no
+mask              : no
+urlcolor          : blue
+header-includes:
+   - \usepackage{bm}
+   - \usepackage{pcl}
+   - \usepackage{amsmath}
+   - \usepackage{setspace}
+   - \usepackage{etoolbox}
+   - \AtBeginEnvironment{quote}{\singlespacing\small\itshape}
+   - \usepackage{marginnote}
+   - \newcommand{\readme}[1]{\emph{\marginnote{Julia} (#1)}}
+
+lang              : "english"
+class             : "man"
+output            : 
+  papaja::apa6_pdf:
+    pandoc_args: !expr rmdfiltr::add_wordcount_filter()
+csl               : apa6.csl
+editor_options: 
+  chunk_output_type: console
+---
+
+<!-- \spacing{1.5} -->
+
+```{r load_packages, include = FALSE}
+knitr::opts_chunk$set(echo = F)
+
+library("plyr")
+# library("dplyr")
+# library("ggplot2")
+library("papaja")
+library("knitr")
+library("BayesFactor")
+library("reshape2")
+library("rvest")
+library("RCurl")
+library("xml2")
+library("rmdfiltr")
+add_wordcount_filter(add_citeproc_filter(args = NULL))
+
+# theme_set(theme_apa(base_size = 12))
+
+batch_read_github <- function(url, extension, read_fun) {
+  if(!require("rvest")) stop("Please install the 'rvest' package.")
+  if(!require("RCurl")) stop("Please install the 'RCurl' package.")
+  if(!require("stringr")) stop("Please install the 'stringr' package.")
+  
+  # Fetch file names
+  github_page <- read_html(url)
+  file_nodes <- html_nodes(github_page, ".content .css-truncate-target .js-navigation-open")
+  file_names <- html_text(file_nodes)
+  file_url <- html_attr(file_nodes, "href")[grep(extension, file_names)]
+  
+  file_url <- paste0("https://raw.githubusercontent.com", file_url)
+  file_url <- gsub("blob/", "", file_url)
+  
+  data <- lapply(file_url, read_fun, header = T) #, ...)
+  data <- do.call("rbind", data)
+  data
+}
+
+make_y <- function(dat){ 
+  #vector of 3 values
+  #, first = number of remember responses
+  #, second = number of know responses
+  #, third = number of new responses
+  if(!is.vector(dat)){return("data not in the right format")}
+  if(length(dat) !=3){
+    return("please submit vector with #remember
+           , #know and #new responses and column labels R, K and N")}
+  
+  (dat['Remember'] - dat['Know'])/sum(dat[c('Remember', 'Know', 'New')])
+}
+```
+
+```{r analysis_preferences}
+# Seed for random number generation
+set.seed(1234)
+```
+
+```{r G1988, results='asis'}
+#Data from Gardiner, 1988, exp1
+Shallow <- c(0.35, 0.17)
+Deep <- c(0.65, 0.17)
+Lure <- c(0.05, 0.07)
+
+tabdat <- rbind(Deep, Shallow, Lure)
+tabdat <- cbind(tabdat, 1 - rowSums(tabdat))
+colnames(tabdat) <- c("Remember", "Know", "New")
+
+#SDT analysis
+pred <- function(par)
+{
+oldDeep <- diff(pnorm(c(-Inf, par[3:4], Inf), par[1], 1))
+oldShallow <- diff(pnorm(c(-Inf, par[3:4], Inf), par[2], 1))
+new <- diff(pnorm(c(-Inf, par[3:4], Inf), 0, 1))
+p <- rbind(oldDeep, oldShallow, new)
+p <- p[, 3:1]
+colnames(p) <- c("Remember", "Know", "New")
+rownames(p) <- c("Deep","Shallow","Lure")
+return(p)
+}
+
+error <- function(par,dat){
+	p <- pred(par) 
+	return(sum ((qnorm(p) - qnorm(dat))^2))
+	}
+
+par <- c(1, 1, 1, 1.5)
+
+# error(par, tabdat)
+g <- optim(par, error, dat = tabdat)
+h <- nlm(error, g$par, dat = tabdat)
+g <- optim(h$estimate, error, dat = tabdat)
+
+# tab <- matrix(paste0(tabdat, " (", round(pred(g$par), 2), ")"), ncol = 3)
+tab <- tabdat
+rownames(tab) <- rownames(tabdat)
+colnames(tab) <- colnames(tabdat)
+
+# yij <- apply(tab, 1, make_y)
+# 
+# tab <- cbind(tab, yij)
+# colnames(tab)[4] <- "Scaled Difference"
+```
+
+```{r GJ1990, results='asis'}
+#Data from Gardiner, 1990, exp2
+OW <- c(.28, .16)
+ONW <- c(.19, .30)
+NW <- c(.04, .11)
+NNW <- c(.03, .12)
+
+tabdat2 <- rbind(OW, ONW, NW, NNW)
+tabdat2 <- cbind(tabdat2, 1 - rowSums(tabdat2))
+colnames(tabdat2) <- c("Remember", "Know", "New")
+
+#SDT analysis
+pred <- function(par)
+{
+oldW <- diff(pnorm(c(-Inf, par[3:4], Inf), par[1], 1))
+oldNW <- diff(pnorm(c(-Inf, par[5:6], Inf), par[2], 1))
+newW <- diff(pnorm(c(-Inf, par[3:4], Inf), 0, 1))
+newNW <- diff(pnorm(c(-Inf, par[5:6], Inf), 0, 1))
+p <- rbind(oldW, oldNW, newW, newNW)
+p <- p[, 3:1]
+colnames(p) <- c("Remember", "Know", "New")
+rownames(p) <- c("Old Word","Old Nonword","New Word", "New Nonword")
+return(p)
+}
+
+error <- function(par,dat){
+	p <- pred(par) 
+	return(sum ((qnorm(p) - qnorm(dat))^2))
+	}
+
+par <- c(1, 1, 1, 1.5, 1, 1.5)
+
+# error(par, tabdat)
+g2 <- optim(par, error, dat = tabdat2)
+h2 <- nlm(error, g2$par, dat = tabdat2)
+g2 <- optim(h2$estimate, error, dat = tabdat2)
+
+yij <- apply(tabdat2, 1, make_y)
+
+tab2 <- matrix(paste0(tabdat2, " (", round(pred(g2$par), 2), ")"), ncol = 3)
+# tab2 <- tabdat2
+rownames(tab2) <- c("Old Word","Old Nonword","New Word", "New Nonword")
+colnames(tab2) <- colnames(tabdat2)
+
+tab2 <- cbind(tab2, yij)
+colnames(tab2)[4] <- "Scaled Difference"
+```
+
+```{r GJ19903}
+#Data from Gardiner, 1990, exp3
+OW3 <- c(.33, .27)
+ONW3 <- c(.39, .27)
+NW3 <- c(.13, .22)
+NNW3 <- c(.07, .22)
+
+tabdat3 <- rbind(OW3, ONW3, NW3, NNW3)
+tabdat3 <- cbind(tabdat3, 1 - rowSums(tabdat3))
+colnames(tabdat3) <- c("Remember", "Know", "New")
+
+yij <- apply(tabdat3, 1, make_y)
+
+tab3 <- cbind(tabdat3, yij)
+colnames(tab3) <- c("Sure", "Unsure", "New", "Scaled Difference")
+```
+
+One major feature in the modern study of memory is a healthy respect for the distinction between different mnemonic processes. One impactful distinction is that between conscious recollection and familiarity-based automatic activation [@Yonelinas:2002; @Mandler:1980; @Atkinson:Juola:1973; @Jacoby:1991]. This distinction forms the basis of dual-process theory, and is influential in the neurobiology of memory [@Squire:1994; @Vilberg:Rugg:2008], in understanding cognitive aging [@Prull:etal:2006; @Jennings:Jacoby:1993; @Jennings:Jacoby:1997], and in memory pathology research [@Yonelinas:etal:1998]. 
+<!-- Indeed, it is hard to overstate the importance of the distinction between recollection and familiarity in the memory literature. -->
+
+<!-- NEW
+
+Skeptics, on the other hand, are equally sure that each of these pillars is a toothpick that will snap under appropriate scrutiny.  -->
+
+Dual-process theory is a polarizing topic in memory research. Proponents of dual-process theory cite several pillars of behavioral support, including the shape of the receiver operating characteristic [@Yonelinas:1999], the presence of double-dissociations in explicit and implicit recognition tasks [@Schacter:Tulving:1994], and the selective influence of critical manipulations in the remember-know-new paradigm [@Tulving:1985]. Skeptics, on the other hand, have provided what we call demonstrations of doubt [e.g., @Dougal:Rotello:2007; @Dunn:2004]. The prevailing argument of the skeptics is that it is possible to account for the above phenomena with a single process rather than with two distinct processes. For example, asymmetries in ROC signatures may arise from two separate processes, but may reflect specific configurations within a single-process account [@Province:Rouder:2012]. Likewise, double dissociations across tasks may also be accounted for by a single monotonic performance curve that reflects the operations of a single process [@Dunn:2008]. Yet, many of these demonstrations of doubt are contestations of what counts as evidence more than firm findings. Consequently, whether individual researchers find single- or dual-process theories more convincing seems to reflect that individual's training more than any specific finding.
+
+One pillar of support that we find especially convincing are certain selective influence results within the remember-know-new paradigm. In the remember-know-new paradigm [@Tulving:1985] participants are first given a study list, and they are subsequently presented with a test list consisting of previously studied (old) and new items. Participants judge whether each test item is new or old. If they judge the item as old then they further judge whether they *remembered* the item or *knew* it.  According to proponents, the endorsement of a *remember* response indicates a conscious, recollective recall, and the endorsement of a *know* response indicates automatic activation based on familiarity.
+
+The remember-know task may be combined with experimental manipulations to validate the claim that it measures distinct memory processes. @Gardiner:1988, for example, used a levels-of-processing manipulation with the critical hypothesis that deeply processed items are more likely to be consciously recollected. 
+Table\ \@ref(tab:tab1) shows the results from Gardiner [-@Gardiner:1988, Experiment 1]. Indeed, only *remember* responses are affected by the processing depth manipulation.
+
+```{r "tab1", results='asis'}
+apa_table(tab
+          , stub_indents = list(Condition = 1:3)
+          , caption = "Response proportions from Gardiner (1988, Exp. 1)"
+          , col_spanners = list(Response = c(2, 4))
+          , align = 'lccc'
+          # , note = "Predictions from a six-parameter single-process model are provided in parentheses."
+          )
+```
+
+Even though the above results are impressive, @Donaldson:1996 and @Dunn:2004 provide an important critique.  Accordingly, the remember-know judgment cannot be considered a direct measure of memory processes without accounting for the influence of decision processes.
+<!-- Key is the role of bias or criterial settings.  -->
+An alternative to dual-process accounts is a single-process signal-detection account where *remember* and *know* responses reflect different criteria on a single latent mnemonic strength.
+<!-- : *Remember* responses may index latent mnemonic strengths over a high threshold; *know* responses may indicate mnemonic strengths between a low and a high threshold; and *new* responses may indicate mnemonic strengths below a low threshold.  Moreover, the -->
+A manipulation at study may affect decision criteria perhaps as much as the underlying memory strength [@Hirshman:Master:1997]. Indeed, @Dunn:2004 shows how the large corpus of remember-know results like those in Table\ \@ref(tab:tab1) may be accommodated by a single-process signal-detection model. <!--The predictions from a six-parameter signal-detection model for the @Gardiner:1988 data are given in parentheses in Table\ \@ref(tab:tab1). As can be seen, these predictions are fairly accurate given the constraint of the model. The signal-detection analysis is provided in the Appendix.-->
+
+```{r "tab2", results='asis'}
+apa_table(tab2
+          , stub_indents = list(Condition = 1:4)
+          , caption = "Response proportions from Gardiner and Java (1990, Exp. 2)"
+          , col_spanners = list(Response = c(2, 4))
+          , align = 'lcccr'
+          , note = "Predictions from a single-process model are provided in parentheses."
+          , placement = "b"
+          )
+```
+
+There is, however, a class of remember-know results that seem immune to the Donaldson-Dunn critique. Consider the  experiments from @Gardiner:Java:1990, who had participants study words and word-like nonwords.  At test, participants judged four types of items: old words, old nonwords, new words, and new nonwords.
+<!-- Gardiner and Java hypothesized that words would better elicit recollection than nonwords.   -->
+<!-- New nonwords were included so that participants could not judge whether an item was old or new based on its lexical status.   -->
+The key here is the inclusion of two types of lure: new words and new nonwords which allows for the isolation of criterial effects. Both single- and dual-process theories may account for an increase in *remember* responses for old words compared to old nonwords. If this increase is due to criterial differences between words and nonwords as stipulated by the single-process account, we would expect a corresponding increase  in *remember* responses for new words than new nonwords. If this increase reflects enhanced recollection old words, then there should no difference in *remember* responses for new items. Note that for this paradigm there are clear predictions that may be assessed without the need for a formalized process model.
+
+Gardiner and Java's [-@Gardiner:Java:1990] results, shown in Table\ \@ref(tab:tab2), are stunning.  For old items, there is a perfect crossover with a greater proportion of *remember* responses to old words and a greater proportion of *know* responses to old nonwords. For new items, response proportions are invariant to lexical status. This lack of effect implies that lexical status does not affect decision criteria. The strength of these results are the simultaneous demonstration of a perfect crossover in one condition with a perfect invariance in another. No process model is needed to interpret the data pattern. In our view, these results are perhaps the strongest of all remember-know results that we know of because they implicate two mnemonic processes while ruling out one. <!--Importantly, a signal-detection model cannot account for the data pattern (the predictions from such a model are given in parentheses in Table\ \ref{Tab:tab2}). 
+The predictions from the single-process model attenuate the observed interaction for old items while providing for a small interaction for new items. 
+Even though the misses are small they are nevertheless problematic because the model is so flexible and so heavily parameterized. -->
+
+We may be the first to interpret the simultaneous crossover and invariance as so impactful. @Dunn:2004, for example, fit a single-process model to the data where strength and criterion parameters are allowed to vary between words and nonwords. The predictions from Dunn's model are shown in parentheses in Table\ \@ref(tab:tab2). The absolute deviations from the observed data seem small, and this may be why Dunn did not interpret them as meaningful. Yet, the relative size and direction of the misses is clearly important: If we focus on old words, we see that the model only predicts half the effect (.12 vs. .06), and if we focus on the observed equality between new words and new nonwords, we see the model introduces a .04 effect which is quite sizable for such small proportions. The direction and sign of these misses are the tell-tale sign of two processes.
+
+<!-- Specifically, the fit provided by the single-process model in Table\ \ref{Tab:tab2} is only achieved when allowing both strength *and* criterion parameters to vary between words and nonwords, the most flexible version of this single-process model. -->
+
+Because Gardiner and Java's [-@Gardiner:Java:1990] results implicate the dual-process account at the expense of the single-process account, they serve as an appropriate target of replication. We performed a preregistered replication study across two different labs.^[Preregistration of Experiment 1 can be found here: [https://osf.io/873sg/](https://osf.io/873sg/); Experiments 2 and 3 are preregistered at [https://osf.io/k2ve3/](https://osf.io/k2ve3/).]  The replication attempts spanned the labs of Rouder and Naveh-Benjamin, who have somewhat opposing views on the usefulness of the distinction between recollection and familiarity.  In previous publications, Naveh-Benjamin and colleagues have leveraged the explanatory power of this distinction [e.g. @naveh2009; @Old2008] while Rouder and colleagues have been skeptical [@Pratte:Rouder:2011; @Pratte:Rouder:2012]. 
+<!-- ; @Rouder:etal:2008a -->
+
+ <!-- For this task, participants were asked to indicate how sure they were with their *old* judgment. The sure-unsure decision was included by Gardiner and Java to combat strength based accounts; their interpretation was that sure-unsure judgments index the strength of memory, whereas remember-know judgment are driven by different mnemonic processes (i.e. recollection and familiarity). The results of this third experiment supported this interpretation as *sure* responses were more likely for old items, regardless of lexical status, whereas *unsure* responses were more likely for new items. Thus this experiment provides an important comparison to remember-know decisions. -->
+
+# Statistical Models for Data Analysis
+
+The striking elements of Gardiner and Java's [-@Gardiner:Java:1990] results are the perfect crossover for old items in conjunction with an invariance for new items. While it is clear that this data pattern supports a dual-process interpretation, it remains unclear in general which possible data patterns would contradict this interpretation. In our view, identifying these patterns *before* data collection is key for a replication study. Therefore, before we collected any data, we proposed and preregistered the following models and analyses.
+
+Gardiner and Java conducted a $2\times 2$ ANOVA for old items where they treated lexical status and remember/know judgment as factors. The result was a significant interaction and no significant main effects. The authors interpreted this interaction as the critical piece of support theory. They then ran a separate $2\times 2$ ANOVA for new items resulting in a non-significant interaction. They more or less disregarded this analysis.
+<!-- ^[@Gardiner:Java:1990 generally interpreted their results differently than we do. We would like to point out, however, that their interpretation cannot include considerations of the Donaldson-Dunn critique as this critique was developed after the original study was published.] -->
+There are several flaws with this approach: 1. Remember-know judgments are not a factor. Hence, the interpretation of the interaction is compromised. 2. Using separate tests to assess what happened for new and old items is unprincipled. 3. How test results correspond to theories is posthoc. To correct these flaws, we decided to assess evidence for dual-process theory or single-process theory in a Bayesian model comparison framework. The key is that the models are specified before data collection.
+<!-- and @Rouder:etal:2017a. -->
+
+<!--The first step for the analysis is to identify Gardiner and Java's [-@Gardiner:Java:1990] hypotheses. -->
+
+Gardiner and Java implicate two hypotheses. Their first hypothesis, denoted $H_1$, is that *remember* responses would be more prevalent for old words than old nonwords.  Their second hypothesis, denoted $H_2$, is that *know* responses would be more prevalent for old nonwords than for old words.  Though not explicitly hypothesized, Gardiner and Java tested the lack of effect of lexical status for new items. We call this null hypothesis $H_3$.  
+<!-- These three hypotheses are not exclusive, and all three were observed in their data. -->
+
+Unfortunately, $H_1$ and $H_2$ are not independent: Any endorsement of a *remember* response necessarily implies a lack of endorsement of a *know* response leading to a negative correlation between *remember* and *know* response rates. The correlation is highest if one conditions on the number of *new* responses. If the *remember* response frequency is high, the *know* response frequency automatically has to be low. It is therefore not surprising that Gardiner and Java found a crossover interaction in their analysis. They treated *remember* and *know* responses as independent and overinterpreted the negative correlation pattern for old items. 
+
+One way to address this dependency is to model a composite measure rather than two independent measures: We simply take the difference of *remember* and *know* response frequencies which implicitly accounts for the negative relationship. Here, we provide a set of statistical models on this difference that specify the above hypotheses.
+
+We start with the following notation for data.  Let $r_{ij}$, $k_{ij}$, and $n_{ij}$ denote the number of *remember*, *know* and *new* responses, respectively, for the $i$th participant and $j$th condition, $i=1,\ldots,I$ and $j=1, 2, 3, 4$, where the four conditions in order are: presentation of old words, old nonwords, new words, and new nonwords.  Hence $r_{ij} + k_{ij} + n_{ij}$ sums to the number of tested items for the $i$th participant in the $j$th condition. We model a single measure, the *scaled difference score*, denoted as $Y_{ij}$, and define it as the scaled difference between *remember* and *know* responses: 
+
+\begin{equation} \label{eq:yij}
+Y_{ij}=(r_{ij} - k_{ij})/(r_{ij} + k_{ij} + n_{ij}).
+\end{equation}
+
+The value of the scaled difference is between -1 and 1, and it is negative when *know* responses are preferred over *remember* responses, and positive when *remember* responses are preferred over *know* responses. The last column in Table\ \@ref(tab:tab2) provides scaled differences per condition for the response proportions in Gardiner and Java's Experiment 2. What is critical here is both the sign of these scaled differences as well as the comparison across old and new items. First note that for old words the sign is positive for words and negative for nonwords indicating greater endorsement of *remember* for words ($H_1$) and *know* for nonwords ($H_2$). Moreover, note that the values of the scaled differences are about the same for new words and new nonwords. Certainly, no direction would be truly preferred for new items, but the critical point is the equality for new items ($H_3$). 
+
+To test patterns of data we develop a set of statistical models on the scaled differences, $Y_{ij}$, that incorporate the critical patterns or their negation. The most general model, the *unconstrained model*, is 
+\[
+\calM_u: \quad Y_{ij}\sim\mbox{Normal}(\mu_j,\sigma^2),
+\]
+
+where $\mu_j$ is the true mean scaled difference for the $j$th condition, and $\sigma^2$ is the common variance. The model that instantiates $H_1$, $H_2$ and $H_3$ simultaneously obeys the following restrictions:
+\[
+\begin{aligned}
+\calM_*: \quad \mu_1 &> \mu_2,\\
+\mu_3 &= \mu_4.\\
+\end{aligned}
+\]
+
+The inequality constraint corresponds to the higher prevalence of *remember* responses for old words than to old nonwords. The equality corresponds to the lack of effect of lexical status for new items. This model may be compared to the unconstrained model that does not impose any ordering restrictions on the collection of $\mu_j$. In addition to the unconstrained model, we propose the following alternatives to competitively test model $\calM_*$ against. The first model $\calM_1$ captures the case that the lexical status has no effect on the scaled difference for old or new items:
+\[
+\calM_1: \quad \mu_1 = \mu_2, \; \mu_3=\mu_4.
+\]
+The second model $\calM_2$ captures the case that words, regardless of being old or new, enhance *remember* responses over *know* responses:
+\[
+\calM_2: \quad \mu_1 > \mu_2, \; \mu_3 > \mu_4.
+\]
+The third model $\calM_3$ captures the opposite case that nonwords, regardless of being old or new, enhance *remember* responses over *know* responses.
+\[
+\calM_3: \quad \mu_1 < \mu_2, \; \mu_3 < \mu_4.
+\]
+
+<!-- Identifying these theoretically meaningful patterns *before* data collection is key for a replication study. We therefore documented these models in our preregistration document.  -->
+<!--To implement these models in a Bayesian framework, prior distributions are needed on the four $\mu_j$ and $\sigma^2$. -->
+We follow @Haaf:etal:2018 and @Rouder:etal:2012 for prior settings for $\mu_j$ and $\sigma^2$, using a $g$-prior approach. The critical setting here is the scale on $g$, and we used a default setting of $r = \sqrt{2}/2$. With this setting, model comparison with Bayes factors is straight-forward using analytic solutions [@Rouder:etal:2012] and the encompassing approach [@Klugkist:etal:2005]. For the analysis, we used the `BayesFactor` package in `R` [@R-BayesFactor]. The code is provided at [github.com/PerceptionAndCognitionLab/rm-gardiner-java](https://github.com/PerceptionAndCognitionLab/rm-gardiner-java).
+
+
+```{r analysis-1, child="analysis/exp1Analysis.Rmd", cache = T}
+```
+
+```{r analysis-2, child = "analysis/exp2Analysis.Rmd", cache = T}
+```
+
+```{r analysis-3, child = "analysis/exp3Analysis.Rmd", cache = T}
+```
+
+# Experiment 1
+
+The goal of Experiment 1 was to closely replicate Gardiner and Java's Experiment 2. Even so, we decided to improve the experimental methods in four ways outlined subsequently.
+
+## Methods
+
+In their Experiment 2, Gardiner and Java [-@Gardiner:Java:1990] showed 20 participants 15 words and 15 nonwords on handwritten cards, sequentially, for 2 seconds each.  Then after a 24 hour delay, participants were given a recognition test.  Sixty items, again handwritten, were presented on a single piece of paper.  These 60 consisted of 15 old words; 15 old nonwords; 15 new words; and 15 new nonwords.  Participants were instructed to circle old words and then write "R" or "K" next to the item to indicate whether the old-item response reflect recollecting or knowing.
+
+Here are the ways our experiment differed from Gardiner and Java.  1.  To the best of our knowledge, the original materials are not available (we were not able to contact the authors).  We therefore used different words and nonwords that were constructed following Gardiner and Java's generation rules.  2. Instead of a 24 hour retention interval, we used a 10 minute retention interval filled with a distractor task.  The reason for this change is as follows: Gardiner and Java explicitly justify their 24-hour interval as a means of lowering performance to avoid ceiling effects (p. 24).  
+<!-- The 24-hour interval played no other theoretical role, and in particular, there is no reason to suspect that the stunning pattern is a critical function of this long delay.   -->
+We decided that the better way to lower performance was to ask participants to remember more items.  With more items, the statistical properties of the experiment increase and the experimenter has greater resolution to detect differences if they exist and greater confidence in null results otherwise.  Moreover, asking participants to return is inconvenient and may result in the loss of some participants introducing a new bias into the sample.  Hence, using a 10-minute delay with more items---in our case we doubled the number of to-be-remembered and to-be-judged items---is a preferred approach on all accounts to avoiding ceiling effects.  3. We increased the number of participants from 20 to 52 and doubled the number of items at study and at test. This increase of the number of observations results in a much better resolution of the data. 4. We used computer presented items rather than handwritten ones.  Both study and test were performed in a sequential manner rather than simultaneously.
+
+### Participants and design
+
+We initially planned to recruit 50 undergraduate students. In total, `r I.1` undergraduates were recruited at the University of Missouri and participated for partial course credit. One participant was excluded from analysis due to overall performance below chance (accurate response in less than 50% of the trials). The study has a 2 (words vs nonwords) x 2 (old vs. new items) repeated measures factorial design, resulting in a total of $`r I.1` \times 2 \times 2 \times `r L.1` = `r 53*2*2*30`$ collected observations.
+<!-- does I include the excluded participant or not? It does. -->
+
+### Material
+
+Criteria for material selection were taken from Gardiner and Java's Experiment 2. Sixty high familiarity concrete nouns with one syllable and four letters were taken from the MRC psycholinguistics database [@Coltheart:1981]. Sixty pronounceable nonwords with four letters and two to four phonemes were selected from the ARC nonword database [@Rastle:etal:2002]. The words and nonwords used in this study are shown in Appendix A.  In the original study, the authors formed two fixed study sets of 15 words and 15 nonwords and randomly selected one of the lists for each participant. In our study, 30 words and 30 nonwords were chosen at random to form the study set for each participant. Items were presented at the center of the screen in the Lucida Console font with a height of 2$^{\circ}$ of visual angle at an approximate viewing distance of 50 cm. At test, 60 words and 60 nonwords were sequentially presented in a random order. Items were shown in the center of the screen together with two buttons (either labeled *OLD* and *NEW* or *R* and *K*, see below) that they could click on to respond. The buttons are circular with a radius of 2$^{\circ}$ and are presented $5^{\circ}$ below and $5^{\circ}$ to the left and right of the center of the screen.
+
+### Procedure
+
+During the study phase, participants studied 60 items (30 words and 30 nonwords) in a randomly determined order. Each item appeared on the screen for 2 seconds (as in the original study) followed by a 0.5 second inter-stimulus-interval. The test phase followed after a ten minute retention interval. During the retention interval, participants were given a 'spot-the-difference' task to complete before moving on to the recognition test. For this task, participants were asked to compare two pictures with small changes between them and circle these changes. 
+Afterward, participants were given instructions for the recognition test phase. The instructions were presented on several screens, and are provided in Appendix B. After the instructions were given on the screen, the experimenter gave a few every-day examples of when *remember* and *know* responses may be appropriate. This approach was also used by @Gardiner:Java:1990, but the exact examples from the original study could not be employed as they were not reported. During the recognition test participants were presented with items one at a time and characterized each item as *old* or *new* using the mouse to click on the corresponding button on the screen. Following an *old* response participants then made an additional remember-know judgment by using the mouse to click on buttons labeled *R* (for *remember*) or *K* (for *know*).
+
+## Results
+
+```{r prep-tab-results, results="asis", warning=F, results='hide'}
+par <- c(.5,.5,.25,1,.25,1)
+
+# SDT analysis, Exp 1
+g.exp1 <- optim(par, error, dat = tabresExp1)
+h.exp1 <- nlm(error, g.exp1$par, dat = tabresExp1)
+g.exp1 <- optim(h.exp1$estimate, error, dat = tabresExp1)
+
+# tabres1 <- matrix(paste0(round(tabresExp1, 2), " (", round(pred(g.exp1$par), 2), ")"), ncol = 3)
+tabres1 <- tabresExp1
+colnames(tabres1) <- colnames(tabresExp1)
+rownames(tabres1) <- rownames(tabresExp1)
+
+# SDT analysis, Exp 2
+g.exp2 <- optim(par, error, dat = tabresExp2)
+h.exp2 <- nlm(error, g.exp2$par, dat = tabresExp2)
+g.exp2 <- optim(h.exp2$estimate, error, dat = tabresExp2)
+
+# tabres2 <- matrix(paste0(round(tabresExp2, 2), " (", round(pred(g.exp2$par), 2), ")"), ncol = 3)
+tabres2 <- tabresExp2
+colnames(tabres2) <- colnames(tabresExp2)
+rownames(tabres2) <- rownames(tabresExp2)
+
+# SDT analysis, Exp 3
+g.exp3 <- optim(par, error, dat = tabresExp3)
+h.exp3 <- nlm(error, g.exp3$par, dat = tabresExp3)
+g.exp3 <- optim(h.exp3$estimate, error, dat = tabresExp3)
+
+# tabres3 <- matrix(paste0(round(tabresExp3, 2), " (", round(pred(g.exp3$par), 2), ")"), ncol = 3)
+tabres3 <- tabresExp3
+colnames(tabres3) <- colnames(tabresExp3)
+rownames(tabres3) <- rownames(tabresExp3)
+
+tabs <- rbind(tabres1, tabres2, tabres3)
+colnames(tabs) <- c("R", "K", "N")
+yij <- apply(tabs, 1, make_y)
+tabs <- printnum(cbind(tabs, yij))
+rowtabs <- rep(c("Old Words", "Old Nonwords", "New Words", "New Nonwords"), 3)
+tabs <- cbind(rowtabs, tabs)
+colnames(tabs) <- c(" ", "Remember/Sure", "Know/Unsure", "New", "Scaled Difference")
+```
+
+```{r tab-results, results="asis"}
+apa_table(tabs
+          , stub_indents = list('Experiment 1' = 1:4, 'Experiment 2' = 5:8, 'Experiment 3' = 9:12)
+          , col_spanners = list('Response' = c(2, 4))
+          , caption = "Response proportions for replication studies."
+          , align = 'lcccr'
+          , row.names = F
+          , note = "Response proportions are for Remember/Know/New responses for Experiments 1 and 2, and for Sure/Unsure/New responses for Experiment 3. The last column provides the scaled difference values per condition as specified in Equation 1."
+          )
+```
+
+Data were *born open* [@Rouder:2016], that is, they were uploaded to a public repository nightly during data collection, and are available [here](https://github.com/PerceptionCognitionLab/data1/tree/master/repGardinerJava/RKN_replication/RKN_exp1). Details about the analysis code are provided in Appendix C. Average response proportions are shown in Table\ \@ref(tab:tab-results). Average accuracy on the old/new task was between 61% and 65% in all four conditions.  This accuracy value is just a tad lower than the average accuracy, 66%, in Gardiner and Java's Experiment 2.  All-in-all, our 10 minute retention period coupled with a doubling of items resulted in an overall performance level that was comparable to that from Gardiner and Java.
+
+```{r results-1, fig.cap="Results from Experiment 1. The dark lines shows average response rates for all participants; dashed lines show average response rates from Gardiner and Java's (1990) Experiment 2. Critically, there is no interaction between item type (i.e. word vs. nonword) and preferred response category (i.e. Remember vs. Know) for the replication data. The right two panels show the modeled scaled difference scores for nonwords relative to words. According to dual-process theory, the scaled difference scores should be above the diagonal for old items as indicated by the shaded area, and on or close to the diagonal for new items.", fig.width=7, fig.asp=.75}
+props_subj <- subset(props_subj_1, RK_resp != "N")
+rk_rates = as.data.frame(with(dat.clean.1, table(RK_resp, item_type, test_type, sub)))
+rk_rates$prop = rk_rates$Freq/L.1
+rk_means = aggregate(prop ~ RK_resp + item_type + test_type, data = rk_rates, FUN = mean)
+
+# plot
+par(mar=c(1,4,0,0), oma=c(4,4,2,2), mgp = c(2, .7, 0))
+layout(matrix(c(1, 2, 5, 3, 4, 6), ncol = 3, byrow = T), widths =  c(.35,.32,.33))
+
+items = c("word", "nonword")
+tests = c("old", "new")
+testLab <- c("Old", "New")
+itemLab <-  c("Word", "Nonword")
+ids = unique(rk_rates$sub)
+labs <- matrix(paste0(LETTERS[1:4], "."), ncol = 2, byrow = F)
+ind <- matrix(1:4, ncol = 2, byrow = T)
+
+for (i in 1:2){ # test
+  for (j in 1:2){ # item
+    if (j==1){
+      par(mar=c(3,3,.5,0))
+    }else{
+      par(mar=c(3,1,.5,0))
+    }
+    plot(NA, xlim=c(.5, 3.5), ylim=c(0,1.05), xlab="", ylab="", axes=F)
+    box()
+    abline(h = .5, col = "gray80", lty = 1)
+    if (j==1){
+      axis(2, las = 2)
+      mtext(text = testLab[i], side = 2, line = 2.2)
+    }
+    if (i==2){
+      axis(1, at = 1:3, labels = levels(rk_rates$RK_resp))
+    } else{
+      mtext(text = itemLab[j], side = 3, line = .5)
+      }
+    
+    lapply(X = ids, function(x) with(subset(rk_rates
+                                            , test_type==tests[i] & item_type==items[j] & sub==x)
+                                     , points(as.numeric(RK_resp), prop, type='b', col='grey')))
+    
+    points(1:3, tabdat2[ind[i, j], ], type = 'b'
+           , col = adjustcolor("indianred", alpha.f = .95), pch = 20,  lwd = 2, lty=2)
+    
+    with(subset(rk_means, test_type==tests[i] & item_type==items[j])
+         , points(as.numeric(RK_resp), prop, type='b', pch = 19, lwd = 2))
+    
+    with(subset(rk_means, test_type==tests[i] & item_type==items[j])
+         , text(x = 1:3, y = 1.03, labels = round(prop, 2)))
+    
+    text(.56, 1.03, labs[i, j], cex = 1.2)
+  }
+}
+
+par(mar=c(3,4,.5,0), mgp = c(2, .7, 0))
+
+yij1 <- suppressMessages(dcast(dat.all.1, sub ~ item_type + test_type))
+axis.lims <- c(-.85, .85)
+
+plot(yij1$nonword_old, yij1$word_old
+     , ylab = expression(Y[i1] ~ "(old words)")
+     , xlab = expression(Y[i2] ~ "(old nonwords)")
+     , col = "gray40"
+     # , frame.plot = F
+     , ylim = axis.lims
+     , xlim = axis.lims
+     )
+abline(0, 1, lwd = 1.5, col = "indianred")
+polygon(x = c(-1, 1, -1), y = c(-1, 1, 1), col = adjustcolor("indianred", .25), border = F)
+points(yij1$nonword_old, yij1$word_old, pch = 19, col = "gray40")
+mtext(text = "Scaled Difference", side = 3, line = .5)
+mtext("R", side = 2, line = 0.5, cex = .65, adj = 1)
+mtext("K", side = 2, line = 0.5, cex = .65, adj = 0)
+mtext("R", side = 1, line = 0.5, cex = .65, adj = 1)
+mtext("K", side = 1, line = 0.5, cex = .65, adj = 0)
+text(-.81, .82, "E.", cex = 1.2)
+
+plot(yij1$nonword_new, yij1$word_new
+     , ylab = expression(Y[i3] ~ "(new words)")
+     , xlab = expression(Y[i4] ~ "(new nonwords)")
+     , col = "gray40"
+     # , frame.plot = F
+     , ylim = axis.lims
+     , xlim = axis.lims
+     )
+abline(0, 1, lwd = 1.5, col = "indianred")
+points(yij1$nonword_new, yij1$word_new, pch = 19, col = "gray40")
+text(-.81, .82, "F.", cex = 1.2)
+mtext("R", side = 2, line = .5, cex = .65, adj = 1)
+mtext("K", side = 2, line = 0.5, cex = .65, adj = 0)
+mtext("R", side = 1, line = 0.5, cex = .65, adj = 1)
+mtext("K", side = 1, line = 0.5, cex = .65, adj = 0)
+
+#indiv. accuracy
+accurate.sub <- with(dat.clean.1, tapply(accuracy, list(sub, item_type, test_type), mean))
+
+##H, FA, CR, M
+hcr_subj <- plyr::ddply(dat.clean.1
+                    , c("sub", "item_type", "test_type", "ON_resp")
+                    , summarise
+                    , prop = length(sub)/L
+                    , .drop=FALSE)
+hcr <- tapply(hcr_subj$prop
+              , list(hcr_subj$ON_resp, hcr_subj$test_type)
+              , mean)
+```
+
+### Descriptive Analysis
+
+Participants in our study displayed far less bias than those in Gardiner and Java's.  In our experiment, hit rates (`r printnum(hcr[2, 1])`) and correct-rejection rates (`r printnum(hcr[1, 2])`) are about the same in value indicating no particular bias to say old or new.  This relative lack of bias contrasts to extreme bias in Gardiner and Java.  In their experiments, hit rates were low (0.47) while correct-rejection rates were high (0.85).  
+
+<!-- On an individual level, accuracy varied between `r round(100 * min(accurate.sub))`% and `r round(100 * max(accurate.sub))`% when evaluated per condition. -->
+
+To assess the data pattern critical for the replication, we focus on proportions of *remember* and *know* responses as shown in Figure\ \@ref(fig:results-1). The black lines in panels A.-D. show average response proportions. The two left panels show response proportions to old and new words, and the two middle panels show response proportions to old and new nonwords. The original results by Gardiner and Java [-@Gardiner:Java:1990] is shown by the dashed line. The critical comparison is between the left and middle panels of each row. The expected data pattern for a successful replication of @Gardiner:Java:1990 would show the following two signatures: 1. A marked difference between the left and middle panels of the top row.  In particular, recollection responses should be higher for old words than old nonwords and the reverse for know responses.  2. No differences between the bottom left and bottom middle panels; that is, there should not be an effect of lexical status for new items.  We did not observe the first signature.  Panel A appears to be the same as panel C. The invariance between the left and middle panels indicates that there is no effect of lexical status on responses for old or new items.  Nonwords seemingly act like words.  
+
+It may seem surprising that there is no effect of lexical status.  However, note that @Gardiner:Java:1990 also failed to find a main effect of lexical status (see Table\ \@ref(tab:tab2)). Instead, their analysis showed a perfect crossover interaction of lexical status and response category (*remember* vs. *know*). However, in the current study, there is no apparent interaction, let alone the stunning crossover.
+
+On an average level, there is no differential preference for either *remember* or *know* responses across old and new items. Yet, individuals' response proportions vary drastically as shown by the grey lines in Figure\ \@ref(fig:results-1). Some participants almost exclusively use *remember* responses to classify old items while others almost exclusively use *know* responses to classify old items. This variability of preferences may have various explanations, one of them being that participants are not able to consistently classify their mnemonic experience as *remember* or *know*. We return to this issue when discussing Experiment 2, which aimed to better instruct participants on the criteria for remember and know responses.
+
+### Model-based Analysis
+
+To quantify the evidence for or against the replication we use the model-based approach explained previously. For this approach, we calculate scaled differences $Y_{ij}$ for each individual and condition. As a reminder, these scaled differences can be interpreted as the bias for *remember* responses compared to *know* responses. On the group level, we expected a positive scaled difference for old words, a negative scaled difference for old nonwords, and similar scaled differences for new words and nonwords. Table\ \@ref(tab:tab-results) shows the average scaled differences for the conditions. All are positive, and the contrasts between the scaled differences for old items and new items are about the same.
+
+Figure\ \@ref(fig:results-1) panels E-F show the individual scaled differences for the four item types (old words and old nonwords in panel E; new words and new nonwords in panel F). If an individual experienced differing processing for words and nonwords as proposed in @Gardiner:Java:1990, we should observe points above the diagonal line in panel E. Yet, the scaled differences across conditions are on both sides of the diagonal, and they are highly correlated suggesting a more global bias to one of the two response options.
+
+The data in Figure\ \@ref(fig:results-1)E-F are submitted to the model analysis, and the replication model, $\calM_{*}$, is compared to alternative accounts using Bayes factor model comparison. The preferred model is Model $\calM_{1}$, the model representing a straight-forward single-process criterion shift account. According to the model, proportions of *remember* and *know* responses are about the same for words and nonwords. Model $\calM_{1}$ is preferred over the replication model $\calM_{*}$ by `r 1/bf.stara1`-to-1. The second-best performing model is model $\calM_3$ with a Bayes factor of `r bfs.exp1[4]/bfs.exp1[2]`-to-1 in favor of the winning model. The least preferred model is model $\calM_2$ with a Bayes factor of `r bfs.exp1[3]/bfs.exp1[2]`-to-1 in favor of the winning model. 
+
+In summary, we were not able to replicate the data pattern in Gardiner and Java's Experiment 2 [-@Gardiner:Java:1990]. Instead, the Bayesian analysis yields evidence for the alternative model $\calM_1$, capturing the case that the lexical status (nonword vs. word) has no effect on the scaled difference of *remember* and *know* responses for both old and new items.
+
+## Discussion
+
+There are similarities and differences between our results and @Gardiner:Java:1990. Although our participants have the same overall accuracy as Gardiner and Java, they differ in bias.  Our participants displayed no preference for old or new responses while Gardiner and Java's were heavily biased toward new responses.  Two procedural differences possibly may have contributed to this difference: 1. we used a sequential presentation at test reducing dependencies among responses to different items; and 2. we used more items with a shortened retention interval to control overall accuracy.  We think the lack of bias is an improvement from a psychometric point-of-view and have no desire to change our procedure to reintroduce such bias. We provide context for interpreting these procedural differences in the General Discussion.
+
+<!-- Moshe: This seems reasonable.  However, from the point of view of replication, the sequential presentation at test here is different than the simultaneous presentation in G&J.  Although I think that our mode of presentation is better (for example, it can help exclude  people's ability to change their minds after one response and go back to a previous one and change it in a simultaneous presentation), this could potentially be an important difference.  Going back to the literature that deals with the issue of sequential vs. simultaneous presentation at test, and the potential different factors that affect each may be worthwhile. I was able to find one study that indirectly deals with it (though the comparison is between yes-no and 2AFC in the context of faces, not as such sharp differences between simultaneous and sequential presentation as implemented here - "Simultaneous Versus Sequential Presentation in Testing Recognition Memory for Faces, Jason R. Finley, Henry L. Roediger III, Andrea D. Hughes, Christopher N. Wahlheim and Larry L. Jacoby,  The American Journal of Psychology, Vol. 128, 2, 173-195. 
+
+At the minimum, we need to consider how much more we want say about it.
+having such a replication study may be of interest as, in addition to providing a more "literal" replication , it could show whether again the results are not replicable, or that actually, they are but under specific conditions.  -->
+
+<!--
+The sequential presentation at test undoubtedly affects performance; for one it likely made people way less likely to say "new". But it's really really hard to think of how this could have changed the relative frequency of R/K responses for words/ nonwords. It is unlikely that dual process theorists would want to choose simultaneous presentation of test items as a boundary condition for observing two mnemonic processes. 
+
+Maybe we can come at this head on in the same paragraph in the general discussion where we discuss the 24hr thing. *** = new stuff
+
+... Some may wonder about the effect of the 10-minute vs. 24-hour retention period even though there is no theoretical reason to think that dual-process signatures would be observable only after a day.  We note that if a 24-hour retention period is needed to see the signature of recollection and familiarity, then the vast majority of remember-know experiments in the literature are fatally flawed. ***Equally some may point to the use of sequential presentation at test as being the crucial difference. We can see no reason why this test procedure would suffer limitations in distinguishing mnemonic processes relative to simultaneous presentation. As we have been clear we see overwhelming benefits. In addition to finding no reason to think of our testing procedure as a major factor we would also be forced to question the theoretical utility of a process distinction that requires simultaneous versus sequential testing (or a 24hr delay) to reveal itself.***
+-->
+
+There are two smaller concerns with Experiment 1.  First, the overall accuracy is somewhat low.  From a statistical point-of-view, it would be more desirable to have accuracy closer to .75.  
+<!-- We note that Gardiner and Java's experimental results are characterized by lower accuracy, but this is more a flaw than a feature.   -->
+To raise the level of accuracy in Experiment 2, we slightly reduced the number of studied items from 60 to 50. Consequently, the number of to-be-judged items at test lowered from 120 to 100. Second, in Experiment 1 only the on-screen instructions were standardized.  Participants read these with an experimenter, and then the experimenter provided a few every-day examples.  This aspect of the procedure followed Gardiner and Java.  However, we did not record the examples, and we cannot guarantee that different participants did receive the same examples.  In Experiment 2, we standardized our examples as well as instructions.
+
+
+# Experiment 2
+
+## Methods
+
+### Participants
+
+For the preregistration, we planned to at least collect 30 participants and up to 50 participants. We decided that Spring break 2018 would be our cutoff: If we collected more than 30 participants by then we would stop data collection; if not, we would continue until the end of the semester. Since all the confirmatory analyses are conducted in a
+Bayesian framework, optional stopping or data peaking was not considered problematic [@Rouder:2014]. In total, `r I.2` undergraduates were recruited at the University of Missouri and participated for partial course credit. The experiment has the same design as Experiment 1, resulting in a total of $`r I.2` \times 2 \times 2 \times `r L.2` = `r nrow(dat)`$ collected observations. 
+
+### Material
+
+Fifty words and nonwords were selected from Experiment 1, and the presentation parameters were identical. The selected words and nonwords are indicated in Appendix A.
+
+### Procedure
+
+The general procedure was identical to that used in Experiment 1 with the following changes. Participants studied 50 items (25 words, 25 nonwords) in a random order and were tested on 100 items (50 old, 50 new). A major change was in the instructions presented prior to the recognition phase. We felt, following interaction with participants in Experiment 1, that the phrasing of the written instructions reported by Gardiner and Java could be improved. These experiments were reported almost 30 years ago and were conducted on a UK sample. We attempted to make the remember/ know distinction clearer for our younger, US educated participants. The instructions are provided in Appendix B.
+
+## Results
+
+```{r results-2, fig.cap="Results from Experiment 2. The dark lines shows average response rates for all participants; dashed lines show average response rates from Gardiner and Java's (1990) Experiment 2. Critically, there is no interaction between item type (i.e. word vs. nonword) and preferred response category (i.e. Remember vs. Know) for the replication data. The right two panels show the modeled scaled difference scores for nonwords relative to words. According to dual-process theory, the scaled difference scores should be above the diagonal for old items as indicated by the shaded area, and on or close to the diagonal for new items.", fig.width=7, fig.asp=.75}
+rk_rates = as.data.frame(with(dat.clean.2, table(rating_resp, item_type, test_type, sub)))
+rk_rates$prop = rk_rates$Freq/L.2
+rk_means = aggregate(prop ~ rating_resp + item_type + test_type, data = rk_rates, FUN = mean)
+
+# plot
+par(mar=c(1,4,0,0), oma=c(4,4,2,2), mgp = c(2, .7, 0))
+layout(matrix(c(1, 2, 5, 3, 4, 6), ncol = 3, byrow = T), widths =  c(.35,.32,.33))
+
+items = c("word", "nonword")
+tests = c("old", "new")
+testLab <- c("Old", "New")
+itemLab <-  c("Word", "Nonword")
+ids = unique(rk_rates$sub)
+
+for (i in 1:2){ # test
+  for (j in 1:2){ # item
+    if (j==1){
+      par(mar=c(3,3,.5,0))
+    }else{
+      par(mar=c(3,1,.5,0))
+    }
+    plot(NA, xlim=c(.5, 3.5), ylim=c(0,1.05), xlab="", ylab="", axes=F)
+    box()
+    abline(h = .5, col = "gray80", lty = 1)
+    if (j==1){
+      axis(2, las = 2)
+      mtext(text = testLab[i], side = 2, line = 2.2)
+    }
+    if (i==2){
+      axis(1, at = 1:3, labels = levels(rk_rates$rating_resp))
+    } else{
+      mtext(text = itemLab[j], side = 3, line = .5)
+      }
+    
+    lapply(X = ids, function(x) with(subset(rk_rates
+                                            , test_type==tests[i] & item_type==items[j] & sub==x)
+                                     , points(as.numeric(rating_resp), prop, type='b', col='grey')))
+    
+    points(1:3, tabdat2[ind[i, j], ], type = 'b'
+        , col = adjustcolor("indianred", alpha.f = .95), pch = 20,  lwd = 2, lty=2)
+    
+    with(subset(rk_means, test_type==tests[i] & item_type==items[j])
+         , points(as.numeric(rating_resp), prop, type='b', pch = 19, lwd = 2))
+    
+    with(subset(rk_means, test_type==tests[i] & item_type==items[j])
+         , text(x = 1:3, y = 1.03, labels = round(prop, 2)))
+    
+    text(.56, 1.03, labs[i, j], cex = 1.2)
+  }
+}
+
+par(mar=c(3,4,.5,0), mgp = c(2, .7, 0))
+
+yij2 <- suppressMessages(dcast(dat.all.2, sub ~ item_type + test_type))
+axis.lims <- c(-.85, .85)
+
+plot(yij2$nonword_old, yij2$word_old
+     , ylab = expression(Y[i1] ~ "(old words)")
+     , xlab = expression(Y[i2] ~ "(old nonwords)")
+     , col = "gray40"
+     # , frame.plot = F
+     , ylim = axis.lims
+     , xlim = axis.lims
+     )
+abline(0, 1, lwd = 1.5, col = "indianred")
+polygon(x = c(-1, 1, -1), y = c(-1, 1, 1), col = adjustcolor("indianred", .25), border = F)
+points(yij2$nonword_old, yij2$word_old, pch = 19, col = "gray40")
+mtext(text = "Scaled Difference", side = 3, line = .5)
+mtext("R", side = 2, line = 0.5, cex = .65, adj = 1)
+mtext("K", side = 2, line = 0.5, cex = .65, adj = 0)
+mtext("R", side = 1, line = 0.5, cex = .65, adj = 1)
+mtext("K", side = 1, line = 0.5, cex = .65, adj = 0)
+text(-.81, .82, "E.", cex = 1.2)
+
+plot(yij2$nonword_new, yij2$word_new
+     , ylab = expression(Y[i3] ~ "(new words)")
+     , xlab = expression(Y[i4] ~ "(new nonwords)")
+     , col = "gray40"
+     # , frame.plot = F
+     , ylim = axis.lims
+     , xlim = axis.lims
+     )
+abline(0, 1, lwd = 1.5, col = "indianred")
+points(yij2$nonword_new, yij2$word_new, pch = 19, col = "gray40")
+text(-.81, .82, "F.", cex = 1.2)
+mtext("R", side = 2, line = .5, cex = .65, adj = 1)
+mtext("K", side = 2, line = 0.5, cex = .65, adj = 0)
+mtext("R", side = 1, line = 0.5, cex = .65, adj = 1)
+mtext("K", side = 1, line = 0.5, cex = .65, adj = 0)
+
+#indiv. accuracy
+accurate.sub <- with(dat.clean.2, tapply(accuracy, list(sub, item_type, test_type), mean))
+
+## Standard deviation proportions
+correct.old <- subset(rk_rates, test_type == "old" & rating_resp != "N")
+sd.2 <- with(correct.old, tapply(prop, list(rating_resp, item_type), sd))
+```
+
+Data were made public after data collection and are available at [github.com/PerceptionCognitionLab/data0/tree/master/rm-gardiner-java](https://github.com/PerceptionCognitionLab/data0/tree/master/rm-gardiner-java).
+Average response proportions are shown in Table\ \@ref(tab:tab-results). On average, participants performed better for new items with average accuracies of 69% and 78% for new word and new non-word, respectively. For old items, average accuracies remained similar to the levels in Experiment 1 with accuracies of 64% and 63%.  Individuals' response proportions are shown in Figure\ \@ref(fig:results-2).
+
+### Descriptive Analysis
+
+Once again, the critical comparison is the comparison of panel A to panel C and panel B to panel D in Figure\ \@ref(fig:results-2).  This comparison yields almost no differences between the relative proportions of *remember* and *know* as a function of lexicality for either old items (top row) or new items (bottom row). Again, there is no sign of the prominent crossover interaction of the original study. Additionally, we again find notable individual differences in the preference of either *remember* or *know* responses.
+
+### Model-based Analysis
+
+Table\ \@ref(tab:tab-results) shows the average scaled differences for the four item types (old words, old nonwords, new words, and new nonwords). The scaled difference for old words is small and positive indicating more *remember* responses; the scaled difference for old nonwords is zero indicating no preference between *remember* and *know* responses; and the scaled differences for new words and nonwords are negative indicating a preference for *know* responses. The pattern critically deviates from the original Gardiner and Java pattern for old nonwords. Here, no preference for *know* responses is found.
+
+Figure\ \@ref(fig:results-2) panels E-F show the individual scaled differences for the four item types (old words and old nonwords in panel E; new words and new nonwords in panel F). In panel E, the scaled differences are on both sides of the diagonal. In both panels the correlations are relatively large and positive suggesting a more global bias to one of the two response options.
+
+In Bayes factor model comparison Model $\calM_{1}$, the model representing a straight-forward single-process criterion shift account,  is preferred. According to the model, proportions of *remember* and *know* responses are about the same for words and nonwords. Model $\calM_{1}$ is preferred over the replication model $\calM_{*}$, which is the second-best performing model. The Bayes factor between $\calM_{1}$ and $\calM_{*}$ is `r 1/bfs.exp2[2]`-to-1 in favor of $\calM_{1}$. The least preferred model is model $\calM_2$ with a Bayes factor of `r bfs.exp2[3]/bfs.exp2[2]`-to-1 in favor of the winning model. 
+
+In summary, the main feature of Experiment 2 is a failure to replicate the stunning data pattern of Gardiner and Java's Experiment 2.  In fact, we replicated our Experiment 1 finding in that there is no effect of lexicality on recognition memory. We again found strong individual preferences to either *remember* or *know* responses. This finding may suggest that participants were not able to distinguish between these two distinct mnemonic experiences. To address this concern, we attempted to replicate Gardiner and Java's Experiment 3, where participants are instructed to state the certainty of their *old*-response instead of *remember/know*.
+
+# Experiment 3 -- Sure vs. Unsure Instructions
+
+Although our focus has been on Gardiner and Java's Experiment 2, these authors ran an additional experiment (Experiment 3), to show that the crossover interaction was unique to the remember-know instructions, and, by extension, that remember and know can be interpreted as processes distinct from levels of confidence.  In our Experiment 3, we aimed at replicating Gardiner and Java's [-@Gardiner:Java:1990] Experiment 3.
+
+## Methods
+
+In their Experiment 3, @Gardiner:Java:1990 simply replaced *remember* with *sure* and *know* with *unsure* response options.  In line with their expectation they found that, for both words and nonwords, participants responded *sure* more than *unsure* to old items, whereas for new words and nonwords *unsure* was selected more than *sure*.  There were no effects of lexicality.
+<!-- Given this result in combination with the stunning pattern in their Experiment 2, Gardiner and Java concluded that recollection and familiarity were two, distinct memory processes that could not be surrogates for confidence. -->
+
+In our Experiment 3, we attempt to replicate Gardiner and Java's Experiment 3 as a demonstration of calibration.  If we replicate Experiment 3 of Gardiner and Java (1990) using similar experimental procedures to those in our Experiments 1 and 2, then we have higher confidence that our failure to replicate the more theoretically contentious findings of Gardiner and Java's Experiment 2 is not due to procedural differences. We preregistered and conducted Experiment 3 at the same time as Experiment 2 and without knowing the results of Experiment 2.
+
+### Participants
+
+For the preregistration, we stated the same decision rule as for Experiment 2. In total, `r I.3` undergraduates were recruited at the University of Missouri and participated for partial course credit. The experiment has the same design as the previous experiments, resulting in a total of $`r I.3` \times 2 \times 2 \times `r L.3` = `r nrow(dat)`$ collected observations. 
+
+### Material and Procedure
+
+The same material as in Experiment 2 was used. The procedure was identical to Experiment 2 with two exceptions. First, participants received different instructions for the test phase guiding them on how to navigate sure/unsure responses. The instructions are provided in Appendix B. After the instructions, participants entered the test phase similar to Experiment 1 and 2. Participants were again presented with items one at a time and characterized each item as *old* or *new* using the mouse to click on the corresponding button on the screen. Following an *old* response participants then made a sure-unsure judgment instead of a remember-know judgment by clicking on buttons labeled *S* (for *sure*) or *U* (for *unsure*).
+
+## Results
+
+```{r results-3, fig.asp = .75, fig.width=7, fig.cap="Results from Experiment 3. The dark lines shows average response rates for all participants; dashed lines show average response rates from Gardiner and Java's (1990) Experiment 3. The replication and original results are very similar. According to Gardiner and Java, the scaled differences shown in panels E and F should be on or close to the diagonal lines as no effect of lexicality is expected."}
+su_rates = as.data.frame(with(dat.clean.3, table(rating_resp, item_type, test_type, sub)))
+su_rates$prop = su_rates$Freq/L.3
+su_means = aggregate(prop ~ rating_resp+item_type+test_type, data = su_rates, FUN = mean)
+
+# plot
+par(mar=c(1,4,0,0), oma=c(4,4,2,2), mgp = c(2, .7, 0))
+
+layout(matrix(c(1, 2, 5, 3, 4, 6), ncol = 3, byrow = T), widths =  c(.35,.32,.33))
+
+items = c("word", "nonword")
+tests = c("old", "new")
+testLab <- c("Old", "New")
+itemLab <-  c("Word", "Nonword")
+ids = unique(su_rates$sub)
+
+for (i in 1:2){ # test
+  for (j in 1:2){ # item
+    if (j==1){
+      par(mar=c(3,3,.5,0))
+    }else{
+      par(mar=c(3,1,.5,0))
+    }
+    plot(NA, xlim=c(.5, 3.5), ylim=c(0,1.05), xlab="", ylab="", axes=F)
+    box()
+    abline(h = .5, col = "gray80", lty = 1)
+    if (j==1){
+      axis(2, las = 2)
+      mtext(text = testLab[i], side = 2, line = 2.2)
+    }
+    if (i==2){
+      axis(1, at = 1:3, labels = levels(su_rates$rating_resp))
+    } else{
+      mtext(text = itemLab[j], side = 3, line = .5)
+      }
+    
+    lapply(X = ids, function(x) with(subset(su_rates
+                                            , test_type==tests[i] & item_type==items[j] & sub==x)
+                                     , points(as.numeric(rating_resp), prop, type='b', col='grey')))
+    
+    points(1:3, tabdat3[ind[i, j], ], type = 'b'
+           , col = adjustcolor("indianred", alpha.f = .95)
+           , pch = 19,  lwd = 2, lty = 2)
+    
+    with(subset(su_means, test_type==tests[i] & item_type==items[j])
+         , points(as.numeric(rating_resp), prop, type='b', pch = 19, lwd = 2))
+    
+    with(subset(su_means, test_type==tests[i] & item_type==items[j])
+         , text(x = 1:3, y = 1.03, labels = round(prop, 2)))
+    
+    text(.56, 1.03, labs[i, j], cex = 1.2)
+  }
+}
+
+par(mar=c(3,4,.5,0), mgp = c(2, .7, 0))
+
+yij3 <- suppressMessages(dcast(dat.all.3, sub ~ item_type + test_type))
+axis.lims <- c(-.9, .9)
+
+plot(yij3$nonword_old, yij3$word_old
+     , ylab = expression(Y[i1] ~ "(old words)")
+     , xlab = expression(Y[i2] ~ "(old nonwords)")
+     , col = "gray40"
+     # , frame.plot = F
+     , ylim = axis.lims
+     , xlim = axis.lims
+     )
+abline(0, 1, lwd = 1.5, col = "indianred")
+points(yij3$nonword_old, yij3$word_old, pch = 19, col = "gray40")
+mtext(text = "Scaled Difference", side = 3, line = .5)
+mtext("S", side = 2, line = 0.5, cex = .65, adj = 1)
+mtext("U", side = 2, line = 0.5, cex = .65, adj = 0)
+mtext("S", side = 1, line = 0.5, cex = .65, adj = 1)
+mtext("U", side = 1, line = 0.5, cex = .65, adj = 0)
+text(-.86, .87, "E.", cex = 1.2)
+
+plot(yij3$nonword_new, yij3$word_new
+     , ylab = expression(Y[i3] ~ "(new words)")
+     , xlab = expression(Y[i4] ~ "(new nonwords)")
+     , pch = 19, col = "gray40"
+     # , frame.plot = F
+     , ylim = axis.lims
+     , xlim = axis.lims
+     )
+abline(0, 1, lwd = 1.5, col = "indianred")
+points(yij3$nonword_new, yij3$word_new, pch = 19, col = "gray40")
+text(-.86, .87, "F.", cex = 1.2)
+mtext("S", side = 2, line = .5, cex = .65, adj = 1)
+mtext("U", side = 2, line = 0.5, cex = .65, adj = 0)
+mtext("S", side = 1, line = 0.5, cex = .65, adj = 1)
+mtext("U", side = 1, line = 0.5, cex = .65, adj = 0)
+
+#indiv. accuracy
+accurate.sub <- with(dat.clean.3, tapply(accuracy, list(sub, item_type, test_type), mean))
+
+#Standard deviations of proportions
+correct.old <- subset(su_rates, test_type == "old" & rating_resp != "N")
+sd.3 <- with(correct.old, tapply(prop, list(rating_resp, item_type), sd))
+```
+
+Data were *born open* and are available at [github](https://github.com/PerceptionCognitionLab/data1/tree/master/repGardinerJava/exp2/RKN_replication/RKN_exp2/SU).
+Average response proportions are shown in Table\ \@ref(tab:tab-results). On average, participants performed similarly for new and old items with average accuracies between 65% and 68%. On an individual level, accuracy varied between `r round(100 * min(accurate.sub))`% and `r round(100 * max(accurate.sub))`% when evaluated per condition. Individuals' response proportions are shown in Figure\ \@ref(fig:results-3).
+
+### Descriptive Analysis
+
+The pattern of response proportions is fairly similar to the ones from Experiments 1 and 2 with the exception that there was a clear preference of *sure* responses over *unsure* responses for old items. In fact, the pattern of responses appears highly similar to Gardiner and Java's Experiment 3 as shown by the dashed lines in Figure\ \@ref(fig:results-3). On an individual level, the majority of participants showed the response preferences for *sure* responses for old items, but there was no clear difference of preference between words and nonwords. For new items, *sure* and *unsure* responses were equally likely, again across words and nonwords.
+
+### Model-based Analysis
+
+Table\ \@ref(tab:tab-results) shows the average scaled differences for the four item types (old words, old nonwords, new words, and new nonwords). The scaled differences for old words and nonwords are large and positive indicating more *sure* responses than *unsure*. The scaled difference for new words is small positive, and for new nonwords is negative indicating a preference for *unsure* responses. This result corresponds to Gardiner and Java's results for their Experiment 3.
+
+Figure\ \@ref(fig:results-3) panels E-F show the individual scaled differences for the four item types (old words and old nonwords in panel E; new words and new nonwords in panel F). As in the previous experiments, there is no sign for different response biases for words and nonwords. The positive correlation in the two graphs shows that individuals who prefer *sure* responses for words tend to also prefer *sure* responses for nonwords; participants who prefer *unsure* responses for words tend to also prefer *unsure* responses for nonwords. This pattern is in line with the original results in Gardiner and Java's Experiment 3.
+
+Bayes factor model comparison again shows a preference for model $\calM_{1}$, the model representing a straight-forward single-process criterion shift account. Model $\calM_{1}$ is the replication model for Gardiner and Java's Experiment 3, and it is preferred over model $\calM_{*}$, which is the second-best performing model. The Bayes factor between $\calM_{1}$ and $\calM_{*}$ is `r 1/bfs.exp3[2]`-to-1 in favor of $\calM_{1}$. The least preferred model is model $\calM_3$ with a Bayes factor of `r bfs.exp3[4]/bfs.exp3[2]`-to-1 in favor of the winning model. 
+
+<!-- # Results across Experiments -->
+
+<!-- After three replication attempts of remember-know and sure-unsure paradigms, we may revisit both the response patterns in the paradigms and the signal-detection modeling approach. -->
+
+### Remember-Know vs. Sure-Unsure
+
+Our results provide for a speculation about the role of remember-know instructions compared to more conventional confidence-rating instructions. The confidence-rating experiment, Experiment 3, revealed a strong, consistent preference for the *sure* response relative to the *unsure* response with little individual differences. People are sure about what they know and they are clearly indicating so. As a result, the standard deviations for *unsure* response proportions are relatively low with `r printnum(sd.3[2, 1], digits = 3)` for nonwords and `r printnum(sd.3[2, 2], digits = 3)` for words. This preference can be contrasted with the response pattern for *remember* and *know* from Experiments 1 and 2. Here, we see a lack of preference as well as more variability across individuals. The pattern of individual response proportions is extreme: Some individuals almost exclusively respond *remember* to old items while others almost exclusively respond *know* to old items. The standard deviations for *know* responses are therefore somewhat higher with `r printnum(sd.2[2, 1], digits = 3)` for nonwords and `r printnum(sd.2[2, 2], digits = 3)` for words. 
+
+We speculate that participants have a vague idea at best what *remember* and *know* mean, and the vagueness leads to arbitrary, subjective decisions about their memory that are not indicative of underlying processes [@naveh2012], and that may even be affected by perceptual information [@Mulligan:etal:2010]. These vague subjective definitions of remember/know can be contrasted with the treatment of the sure/unsure distinction where participants are more consistent and more sure of their memory. Admittedly, the instructions of the remember-know task used here could be improved by, for example, providing practice trials where reasons for the responses have to be provided and feedback is given. Yet, the majority of remember-know instructions in the literature are verbal. It may therefore be reasonable to assume that participants had similar difficulties in other RKN paradigms as they had in our studies.
+
+<!-- ## Signal-Detection Revisited -->
+
+<!-- In the beginning of this paper, we showed how the original Gardiner and Java results could not be well-accounted by a standard signal detection model [see also @Dunn:2004].  How about our results?  We fit the same signal detection model presented in Appendix A to our new data.  Table\ \ref{Tab:tab-results} shows the predictions of a signal-detection model, and the values are presented in the parentheses.  As can be seen, for both Experiments 2 and 3, the model fits fairly well, providing estimates close to the observed data. For Experiment 1, the estimates deviate more from the observed data, but the degree of misfit is not severe. -->
+
+# General Discussion
+
+In this paper, we sought to replicate @Gardiner:Java:1990. We consider their Experiment 2 to be the strongest direct behavioral evidence for the distinct memory processes of conscious recollection and automatic activation. As such, the replication is timely and topical. 
+<!-- We attempted this replication across two labs with somewhat diverging positions regarding dual- vs. the single-process models.  -->
+Across two labs, the critical data patterns---a crossover interaction for old items and an invariance for new items---could not be found. Instead, there is seemingly no effect of lexical status. Moreover, Bayesian model comparison of all three experiments supports the simpler single-process model over the more complicated dual-process alternative.
+
+## Procedural and Analytic Differences
+
+There are several procedural and analytic differences between our experiments and Gardiner and Java's.  We think our choices are improvements that rectify limitations in the original design.  Here is a review of the major differences:
+
+1. Increased sample sizes: Gardiner and Java ran experiments with 20 participants observing 60 test items for a total of 1200 observations.  We ran experiments with at least 50 participants observing at least 100 test items for a total of at least 5000 observations.  Hence, our experiments afford greater resolution to see effects and invariances.
+
+2. Decreased retention interval: Our retention interval was 10 minutes rather than 24 hours.  During this retention interval, all participants performed the same intervening task.
+<!-- ---they were instructed to find subtle differences between pairs of photos. -->
+This shorter retention period allowed us to increase the number of items at study and test while maintaining a reasonable level of overall performance.  Moreover, we could ensure that participants were having the same experience in the retention interval.
+<!-- which is not possible with a 24 hour delay.  -->
+<!-- And we avoided the inevitable selection artifact when some participants do not return for the later test session.   -->
+<!-- We emphasize here that  -->
+Importantly, Gardiner and Java did not consider the long retention interval essential, and note it was used only to avoid ceiling effects which we avoid with more items.  
+
+3. Computerized, sequential presentation:  Gardiner and Java used hand-written items on cards and paper.  We computerized the task. In doing so, we used a sequential presentation at test.
+<!-- ---an item was presented, the participant gave a rating, and the next item was presented and so on.   -->
+This method contrasts favorably with Gardiner and Java's simultaneous presentation at test, in which all test items were presented on a single piece of paper.
+<!-- and participants worked through them as they wished.   -->
+Our approach is much more in line with the procedure employed nowadays by most recognition memory researchers, and the sequential nature reduces response dependencies across items. Additionally, the paper-method appears to have introduced a response bias in Gardiner and Java's procedure where participants preferred *new* responses (i.e. *not* circling an item) over *old* responses (i.e. circling an item). 
+<!-- With the sequential presentation and equal effort for *old* and *new* responses we  -->
+We eliminate this bias.
+
+4. Analysis through model comparison: Gardiner and Java used separate ANOVAs to analyze their data, and analyzed response proportion as a function of response option (remember vs. know) and lexicality.  Unfortunately, ANOVA is grossly inappropriate in this application.
+<!-- because response option is not a factor, and "remember" and "know" are not levels.  As a consequence, the proportion of "remember" and "know" responses are heavily negatively correlated. -->
+<!-- (since the total number of responses is constant, an increase in *remember* responses must correspond to a decrease in *know* and *new* responses).   -->
+<!-- This negative correlation is not accounted for by ANOVA, and as a result, there is a marked tendency to overstate the significance of interactions.   -->
+<!-- Our parents raised us better to propagate such a flawed analytic approach. -->
+We take a more appropriate and sophisticated approach by instantiating different theoretical positions as formal statistical models and then use Bayesian model comparison to draw inferences. This approach of using custom-tailored, theoretically specific linear models to answer critical questions should be attractive across cognitive psychology, and we refer interested readers to @Rouder:etal:2016b and @Rouder:etal:2018.
+
+In summary, although our experiments differ in a few aspects from Gardiner and Java, we feel that our choices provide clear improvements.  We thought carefully and deliberately about each, understood why we were making the change, and documented each in the preregistration documents ([https://osf.io/873sg/](https://osf.io/873sg/) and [https://osf.io/k2ve3/](https://osf.io/k2ve3/)). 
+<!-- Despite these procedural differences, we were able to replicate Gardiner and Java's Experiment 3.  -->
+<!-- If any of the design changes are responsible for our failure to replicate Gardiner and Java's Experiment 2, then these changes did not affect our success in replicating Experiment 3. -->
+
+## Signal or Noise?
+
+The remaining question is why our results differ from Gardiner and Java's.  Some readers, especially those predisposed to the dual-process account, may remain unsure whether our failure to replicate reflects procedural changes.  We suspect most readers will not object to computer presentation, appropriate analysis, or increased sample size.  Some may wonder about the effect of the 10-minute vs. 24-hour retention period or the effect of sequential vs. simultaneous testing. We note that there is no theoretical reason to think that dual-process signatures would be observable *only* after a day or *only* with simultaneous tests.  In fact, it stretches common sense that such a fundamental mnemonic signature, if it existed, would be observable in such an unanticipated, limited set of conditions. Moreover, if these conditions are needed to observe the critical dual-process pattern, then the vast majority of remember-know experiments in the literature are fatally flawed.
+
+It is more likely that Gardiner and Java have misinterpreted noise for signal.  Their studies were relatively underpowered and their analysis is characterized by high true Type I error rates in interaction contrasts from naturally occurring negative correlation across response options.  When we correct these flaws, we see no signature of two processes.
+
+# Open Practices Statement
+
+The authors advocate for and adhere to a fully transparent research pipeline [@Rouder:etal:2019a]. This transparency includes preregistration of all three experiments, open data, and open analysis code.
+
+- Preregistration of Experiment 1 can be found here: [https://osf.io/873sg/](https://osf.io/873sg/); Experiments 2 and 3 are preregistered at [https://osf.io/k2ve3/](https://osf.io/k2ve3/).
+
+- Data for Experiments 1 and 3 were *born open* [@Rouder:2016], that is, they were uploaded to a public repository nightly during data collection, and are available  [here](https://github.com/PerceptionCognitionLab/data1/tree/master/repGardinerJava/RKN_replication/RKN_exp1) and [here](https://github.com/PerceptionCognitionLab/data1/tree/master/repGardinerJava/exp2/RKN_replication/RKN_exp2/SU).
+
+- Data from Experiment 2 were made public after data collection and are available [here](https://github.com/PerceptionCognitionLab/data0/tree/master/rm-gardiner-java).
+
+- The document for this paper, with all text and code, can be found at [github.com/PerceptionAndCognitionLab/rm-gardiner-java](https://github.com/PerceptionAndCognitionLab/rm-gardiner-java/tree/public/papers/current).
+
+Please contact the first author in case there are any questions about the data or analysis.
+
+<!-- \newpage -->
+
+# References
+```{r create_r-references}
+# r_refs(file = "r-references.bib")
+```
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id = "refs"></div>
+\endgroup
+
+
+<!-- \newpage -->
+
+# Appendix
+
+<!-- ## Signal-Detection Model -->
+
+<!-- For a simple analysis of Gardiner's [-@Gardiner:1988] Experiment 1 data, Gardiner and Java's [-@Gardiner:Java:1990] Experiment 2 and 3 data, and our own data, we implemented a four-parameter and a six-parameter signal detection model using a maximum-likelihood approach. The model is suited for analysis of group-level data, the only level available from the papers. For generality, we provide the model for Gardiner and Java's [-@Gardiner:Java:1990] Experiment 2. The model may be easily applied to all other experiments except Gardiner's [-@Gardiner:1988] Experiment 1, where a simple restriction of the model is needed. -->
+
+<!-- Is there any reason not to use $i$ for lexicality and $j$ for old/new? -->
+<!-- I think this would make it easier to follow given than k is also used as part of $\ell$ -->
+
+<!-- in fact you do this in the paragraph below $Y_{ij\ell}$  :) -->
+
+<!-- We may use the following notation: Let $j$ denote lexicality status where $j = nw, w$ for nonwords and words, respectively. Let $k$ denote old ($k = o$) and new ($k = n$) items. Additionally, let $\ell$ denote the response option. For the remember-know paradigm, $\ell = r, k, n$ for *remember*, *know*, and *new*. Let $Y_{ij\ell}$ be the response frequency. For example, if $Y_{wor} = 113$ for Gardiner and Java's Experiment 2, that indicates that participants responded *remember* to old words 113 times. We may place Binomial distributions on these frequencies: -->
+
+<!-- \[ -->
+<!-- Y_{jk\ell} \sim \mbox{Binomial}(N_{jk}, \pi_{jk\ell}), -->
+<!-- \] -->
+
+<!-- where $N_{jk}$ is the number of trials in each condition and $\pi_{jk\ell}$ is the probability of the $\ell$th response category in the $jk$th condition. These $\pi_{jk\ell}$ are the target of a signal-detection model. -->
+
+```{r fig-sdt, fig.cap="Signal detection model for Gardiner and Java's (1990) Experiment 2. Here, mnemonic strength parameters $d'$, and criteria, $c$, are allowed to vary across words and nonwords.", fig.width=5.5, fig.asp = .7, eval = F}
+par(mgp = c(2, .7, 0))
+x <- seq(-3, 6, .01)
+y.noise <- dnorm(x)
+y.signal <- dnorm(x, 2)
+y.signal2 <- dnorm(x, 3.5)
+
+plot(x, y.noise
+     , type = "l", lwd = 1.5
+     , xlim = range(x)
+     , ylim = c(0, .5)
+     , frame.plot = F
+     , ylab = "Density"
+     , xlab = "Mnemonic Strength"
+     )
+lines(x, y.signal, col = "firebrick4", lwd = 1.5)
+lines(x, y.signal2, col = "darkblue", lwd = 1.5)
+# make.line(0)
+# make.line(1.5, 1.5)
+lines(x = rep(.78, 2), y = c(0, .45), lwd = 1.5, col = "darkgreen", lty = 2)
+lines(x = rep(2.6, 2), y = c(0, .45), lwd = 1.5, col = "darkgreen", lty = 2)
+lines(x = rep(.81, 2), y = c(0, .45), lwd = 1.5, col = "firebrick1", lty = 2)
+lines(x = rep(3.1, 2), y = c(0, .45), lwd = 1.5, col = "firebrick1", lty = 2)
+axis(3, at = c(0, 2, 3.5), labels = c("0", expression("d'"["nw"]), expression("d'"["w"])))
+# mtext(expression("d'"["n"]), 3, line = .5, at = 1, cex = 1.3)
+# mtext(expression("d'"["w"]), 3, line = .5, at = 2.75, cex = 1.3)
+text(0, .3, "New", cex = .8)
+text(2, .3, "Nonword", cex = .8)
+text(3.5, .3, "Word", cex = .8)
+text(.55, .47, expression("c"["wk"]))
+text(3.1, .47, expression("c"["nwr"]))
+text(1.05, .47, expression("c"["nwk"]))
+text(2.6, .47, expression("c"["wr"]))
+```
+
+<!-- The signal-detection model is illustrated in Figure\ \@ref(fig:fig-sdt). The model assumes one underlying dimension of mnemonic strength and three separate curves: one for new items, both nonwords and words; one for old nonwords and one for old words. These curves have the same shape, typically normal distributions, and different means; typically the mean for new items is set to zero and the mean for old items is $d'_j$, which serves as a measure of sensitivity and is allowed to vary by lexical status. Additionally, response criteria are required to map mnemonic strength onto a specific response option (remember-know). These response criteria, $c_{j\ell}$, can also be allowed to vary by lexical status. Mnemonic strength values smaller than $c_{jk}$ produce a *new* response; those falling above $c_{jk}$ but below $c_{jr}$ produce *know* responses, whereas values greater than $c_{jr}$ result in a *remember response*. With that in mind, response probabilities $\pi$ are the area under the curve between different response criteria. For example, the probability of responding *remember* to old nonwords is given by the area under the middle curve to the right of the criterion $c_{nwr}$. Using these areas under the curves we may now define the response probabilities $\pi_{jk\ell}$ for all $j\times k\times \ell = 12$ conditions and response options: -->
+
+<!-- \begin{align*} -->
+<!-- \pi_{jkr} &= 1 - \Phi(c_{jr} - d'_j),\\ -->
+<!-- \pi_{jkk} &= \Phi(c_{jr} - d'_j) - \Phi(c_{jk} - d'_j),\\ -->
+<!-- \pi_{jkn} &= \Phi(c_{jk} - d'_j).\\ -->
+<!-- \end{align*} -->
+
+<!-- Here $\Phi$ is the cumulative density function (CDF) of a standard normal distribution. Note also that there are only four criteria, $c_{j\ell}$, necessary: No criterion for *new* responses is needed. -->
+
+
+```{r}
+pred <- function(par)
+{
+oldDeep <- diff(pnorm(c(-Inf, par[3:4], Inf), par[1], 1))
+oldShallow <- diff(pnorm(c(-Inf, par[3:4], Inf), par[2], 1))
+new <- diff(pnorm(c(-Inf, par[3:4], Inf), 0, 1))
+p <- rbind(oldDeep, oldShallow, new)
+p <- p[, 3:1]
+colnames(p) <- c("Remember", "Know", "New")
+rownames(p) <- c("Deep","Shallow","Lure")
+return(p)
+}
+
+pred <- function(par)
+{
+oldW <- diff(pnorm(c(-Inf, par[3:4], Inf), par[1], 1))
+oldNW <- diff(pnorm(c(-Inf, par[5:6], Inf), par[2], 1))
+newW <- diff(pnorm(c(-Inf, par[3:4], Inf), 0, 1))
+newNW <- diff(pnorm(c(-Inf, par[5:6], Inf), 0, 1))
+p <- rbind(oldW, oldNW, newW, newNW)
+p <- p[, 3:1]
+colnames(p) <- c("Remember", "Know", "New")
+rownames(p) <- c("Old Word","Old Nonword","New Word", "New Nonword")
+return(p)
+}
+```
+
+
+## A. Material
+
+Below are the words and nonwords presented to the participants during the study phase. The items in italic are the ones only used for Experiment 1. The other items are used for all three experiments.
+
+*Words*
+
+'BATH', 'BEEF', 'BIRD', 'BLUE', 'BOOK', 'CAKE', *'CALL'*, 'CASH', 'COAT', 'COLD', 'DATE', 'DOOR', 'FACE', 'FACT', 'FEET', 'GATE', 'GIRL', 'GOOD', 'HALF', 'HALL', 'HAND', *'HAVE'*, 'HEAD', *'HELP'*, *'HOLD'*, 'HOME', 'KISS', 'KNEE', 'LEFT', 'LIFE', 'LIKE', 'LINE', 'LOOK', 'MAKE', 'MIND', 'NOTE', 'PAGE', 'RAIN', 'REST', 'ROAD', *'ROOM'*, 'SALT', 'SEAT', *'SELF'*, 'SHOP', 'SKIN', 'SNOW', *'SOAP'*, *'SOFT'*, 'SONG', 'TALK', 'TIME', 'TREE', 'WALK', *'WANT'*, *'WARM'*, 'WASH', 'WIND', 'WORK', 'YEAR'
+
+*Nonwords*
+
+'WUIL', 'RILM', 'DENC', *'ZYSE'*, 'LODD', 'CHIE', 'SEFS', *'JAUK'*, 'GWIC', 'WONE', 'PLOK', 'DAPT', 'RETE', 'KLIB', 'SIME', 'LATT', 'SWAZ', 'DUFE', 'WONS', *'HEWF'*, 'MENC', *'ZUNK'*, 'COLV', 'CLOF', 'ABST', *'YOGG'*, 'DAUV', 'VEUL', 'HOAB', 'DOYS', 'SPIZ', 'NARN', *'ZELF'*, 'YAIL', 'CWEB', 'NOGE', *'WONC'*, 'DWEK', 'ZARC', *'GWUZ'*, *'NALN'*, 'HESP', 'JALT', 'UFTS', 'CWUL', 'KEPH', 'MYDE', 'SOTE', 'CHUR', 'FOMB', 'FOSK', 'TRUV', 'SNUZ', 'TASP', 'NAUC', 'VABB', 'ZEAM', *'TUCE'*, 'JOSP', 'LORT'
+
+<!-- \newpage -->
+
+## B. Instructions
+
+### Study Instructions
+
+The same study instructions were used for three experiments:
+
+\begin{quote}In this experiment you will be presented with strings of 4 letters to remember. Sometimes these letters will make a word (for example, CAPE), or sometimes they will be a 'non-word', which is word-like but has no meaning (for example, LARC). Each item (word or non-word) will be presented one at a time in the middle of the screen. Pay close attention to each and try to remember them. Once you have studied all of the items you will be given another task to do for 10 minutes. After that you will be given a recognition test. Press SPACE to begin.
+\end{quote}
+
+### Test instructions for Experiment 1
+
+The following instructions were given on the screen:
+
+\begin{quote}Now is the memory test for the words and nonwords you studied before. You will
+see a single item at a time; some of these will be from the set you studied in the first
+part of the experiment (OLD), others will be ones you did not study (NEW). Please
+work carefully through each item, indicating for each one whether you recognize it
+from the first part of the study or not. If you recognize an item, please click the
+OLD button. If you do not recognize it, please click the NEW button. 
+
+Additionally, as you make your decision about recognizing each word/ nonword, bear
+in mind the following: Often, when remembering a previous event or occurrence, we
+consciously RECOLLECT and become aware of aspects of the previous experience. At
+other times, we simply KNOW that something has occurred before, but without being
+able consciously to recollect anything about its occurrence or what we experienced at
+the time. 
+Thus in addition to your indicating your recognition of a word/ nonword from the
+original study set, you will be asked to click ``R” to show that you recollect the item
+consciously, or click ``K” if you feel you simply know that the item was in the previous
+study set. So, for each item that you recognize as OLD, please click ``R” if you
+recollect its occurrence, or ``K” if you simply know that it was shown in the first part
+of the experiment.
+\end{quote}
+
+Afterwards, the experimenter provided a few every-day examples of remembering and knowing. These examples were neither standardized nor recorded.
+
+### Test Instructions for Experiment 2
+
+The following instructions were given on the screen:
+
+\begin{quote}After you decide an item is old, we would like you to tell us how you know that.
+We are going to give you two choices. One is what we call recollection. To recollect
+something means you remember seeing it. Perhaps you remember a specific thought
+or perhaps you remember what came before or after. The key here is that you
+remember some details about the experience of studying that item. Another way of
+that you may think an item is old is to know it. Knowing means that you know its
+old, but can't recall any of the details. But you still know that item was studied. If
+you are recollecting an item, please hit the ``R” button. If you know it is old, hit the
+``K” button.
+\end{quote}
+
+Afterwards, the experimenter gave further verbal instructions following a script:
+
+\begin{quote}OK, so let's do a few examples. Suppose you are asked about the word FROG,
+and you happen to remember seeing frog because you thought about Kermit. In
+this case, you are recollecting and should press ``R''. Recollection is when you can
+remember actually seeing the word. But suppose, alternatively, in your gut, you
+know FROG was there, but can't actually remember seeing the word at study. In
+this case, press ``K''. The difference between recollection and knowing is kind of like
+trying to figure out where you parked your car at the mall. Sometimes you can recall
+the act of parking including a detail or two like the car next to you or the song on
+the radio. Other times you just walk back there because you know where to go.
+\end{quote}
+
+### Test Instructions for Experiment 3
+
+The following instructions were given on the screen:
+
+\begin{quote}After you decide an item is old, we would like you to tell us how sure you are in your
+decision. If you are very sure it is old, that is you might even bet a lot of money on
+it, hit the ``S” button for sure. If you are not quite this sure, that is, you wouldn't
+want to bet on it, hit the ``U” button for unsure.
+\end{quote}
+
+These instructions were supported by the following verbal instructions:
+
+\begin{quote}OK, so let's do a few examples. Suppose you are asked about the word FROG, and
+you happen to strongly remember seeing FROG, and you are equally sure it wasn't
+TOAD or anything like that. Hit ``S” for sure, bet on it. But suppose your memory is a bit
+fuzzier. Maybe there was reptile, maybe toad, maybe not. Then hit ``U” for unsure.
+Don't bet on things you don't know for sure.
+\end{quote}
+
+\newpage
+
+## C. Analysis Code
+
+This paper was written in `R`-Markdown. In `R`-Markdown, the text and the code for analysis may be included in a single document.  The document for this paper, with all text and code, can be found at [github.com/PerceptionAndCognitionLab/rm-gardiner-java](https://github.com/PerceptionAndCognitionLab/rm-gardiner-java/tree/public/papers/current). We used `r cite_r("r-references.bib")` for all our analyses. 
+

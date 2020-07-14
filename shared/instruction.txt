@@ -1,0 +1,46 @@
+
+### Study Instructions 
+
+"In this experiment you will be presented with strings of 4 letters to remember. \
+Sometimes these letters will make a word (for example, CAPE), or sometimes they will be a 'non-word', which is word-like \
+but has no meaning (for example, LARC). Each item (word or non-word) will be presented one at a time in the middle of the screen. \
+Pay close attention to each and try to remember them. Once you have studied all of the items \
+you will be given another task to do for 10 minutes. After that you will be given a recognition test. \
+\n\nPress SPACE to begin."
+
+
+### Test Instructions (slide 1) 
+
+"Now is the memory test for the words and non-words you studied before. \
+You will see a single item at a time; some of these will be from the set you studied in the \
+first part of the experiment (OLD), others will be ones you did not study (NEW). \
+Please work carefully through each item, indicating for each one whether it is old or new. \
+If you think it is old, please click the OLD button. \
+If you think it is new, please click the NEW button.\n\nPress SPACE to continue"
+
+
+### Test Instruction (slide 2) 
+
+Depends on whether the participant is in the "Remember/Know" or "Sure/Unsure" condition:
+
+## Remember/Know Instructions
+
+# Written, second paragraph
+
+After you decide an item is old, we would like you to tell us how you know that.  We are going to give you two choices.  One is what we call “recollection.”  To recollect something means you remember seeing it.  Perhaps you remember a specific thought or perhaps you remember what came before or after.  The key here is that you remember some details about the experience of studying that item.  Another way of that you may think an item is old  is to “know” it.  Knowing means that you know its old, but can’t recall any of the details.  But you still know that item was studied.  If you are recollecting an item, please hit the R button.  If you know it is old, hit the “K” button.  
+
+# Further Oral Instructions.
+
+OK, so let’s do a few examples.  Suppose you are asked about the word “FROG,” and you happen to remember seeing frog because you thought about Kermit.  In this case, you are recollecting and should press “R.”  Recollection is when you can remember actually seeing the word.  But suppose, alternatively, in your gut, you know FROG was there, but can’t actually remember seeing the word at study.  In this case, press “K”.  The difference between recollection and knowing is kind of like trying to figure out where you parked your car at the mall.  Sometimes you can recall the act of parking including a detail or two like the car next to you or the song on the radio.   Other times you just walk back there because you know where to go.  
+
+
+## Sure/Unsure Instructions
+
+# Written second paragraph for Sure/ Not Sure
+
+After you decide an item is old, we would like you to tell us how sure you are in your decision.  If you are very sure it is old, that is you might even bet a lot of money on it, hit the “S” button for sure.  If you are not quite this sure, that is, you wouldn’t want to bet on it, hit the “U” button for “unsure.”  
+
+# Further Oral Instructions
+
+OK, so let’s do a few examples.  Suppose you are asked about the word “FROG,” and you happen to strongly remember seeing FROG, and you are equally sure it wasn’t TOAD or anything like that.  Hit Sure, bet on it.  But suppose your memory is a bit fuzzier.  Maybe there  was reptile, maybe toad, maybe not.  Then hit “U” for unsure.  Don’t bet on things you don’t know for sure.
+

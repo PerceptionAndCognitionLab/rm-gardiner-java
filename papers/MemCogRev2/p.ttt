@@ -1,0 +1,17 @@
+\begin{table*}
+
+\begin{tabular}{lcccr}
+\toprule
+ & \multicolumn{3}{c}{Response}  &\\
+\cmidrule(r){2-4}
+ & \multicolumn{1}{c}{Remember} & \multicolumn{1}{c}{Know} & \multicolumn{1}{c}{New} & \multicolumn{1}{c}{Scaled Difference}\\
+\midrule
+Condition &  &  &  & \\
+\ \ \ Old Word & 0.28 (0.26) & 0.16 (0.2) & 0.56 (0.55) & 0.12\\
+\ \ \ Old Nonword & 0.19 (0.19) & 0.3 (0.3) & 0.51 (0.51) & -0.11\\
+\ \ \ New Word & 0.04 (0.05) & 0.11 (0.09) & 0.85 (0.86) & -0.07\\
+\ \ \ New Nonword & 0.03 (0.03) & 0.12 (0.12) & 0.85 (0.85) & -0.09\\
+\bottomrule
+\addlinespace
+\end{tabular}
+\end{table*}
